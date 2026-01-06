@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Gran Rifa - Toyota Corolla</title>
+    
+    <!-- Fuentes e Iconos -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Configuración Tailwind (Colores) -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "primary-dark": "#0ea341",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#1c271f",
+                        "surface-highlight": "#28392e"
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- Tu CSS Personalizado -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display antialiased text-white selection:bg-primary selection:text-background-dark">
+
+    <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden pb-32">
+        
+        <!-- Header -->
+        <header class="sticky top-0 z-20 flex items-center justify-between bg-background-dark/95 backdrop-blur-md p-4 pb-2 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-surface-highlight text-primary">
+                    <span class="material-symbols-outlined">local_activity</span>
+                </div>
+                <h2 class="text-white text-xl font-bold leading-tight tracking-tight">Rifa Activa</h2>
+            </div>
+        </header>
+
+        <!-- Contenido Principal -->
+        <main class="flex flex-col gap-6 p-4 max-w-lg mx-auto w-full">
+            
+            <!-- Tarjeta del Premio -->
+            <div class="group relative rounded-2xl bg-surface-dark shadow-lg shadow-black/20 overflow-hidden ring-1 ring-white/10">
+               <div class="relative h-56 w-full bg-gray-800 group">
+                    <!-- Imagen Dinámica -->
+                    <img id="hero-image" alt="Premio Rifa" class="h-full w-full object-cover transition-opacity duration-500" src="https://images.unsplash.com/photo-1617788138017-80ad40651399?q=80&w=2070&auto=format&fit=crop" />
+                    
+                    <!-- Controles del Slider (Ocultos si solo hay 1 foto) -->
+                    <div id="slider-controls" class="hidden">
+                        <button onclick="prevSlide()" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-primary/80 text-white p-1 rounded-full transition-colors backdrop-blur-sm">
+                            <span class="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <button onclick="nextSlide()" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-primary/80 text-white p-1 rounded-full transition-colors backdrop-blur-sm">
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </button>
+                        
+                        <!-- Puntos indicadores -->
+                        <div id="slider-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+                            <!-- JS insertará los puntos -->
+                        </div>
+                    </div>
+
+               <!-- Marca de Agua Desoftsis (50% Opacidad) -->
+                    <div class="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-white border border-white/10 shadow-sm opacity-50 hover:opacity-100 transition-opacity duration-300 cursor-default">
+                        <span class="material-symbols-outlined text-primary text-[16px]">code</span>
+                        <span class="tracking-wide uppercase">Desoftsis</span>
+                    </div>
+                </div>
+                <div class="p-5">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <h3 class="text-2xl font-bold text-white tracking-tight">Toyota Corolla 2024</h3>
+                            <p class="text-gray-400 text-sm font-medium mt-1">Gran Premio • Sorteo #2026</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-400">Precio Ticket</p>
+                            <p id="unit-price-display" class="text-xl font-bold text-primary">$5.00</p>
+                        </div>
+                    </div>
+                  <!-- Barra de Progreso Dinámica -->
+                    <div class="mt-4 flex flex-col gap-1.5">
+                        <div class="flex justify-between text-xs font-medium text-gray-400">
+                            <span>Progreso de venta</span>
+                            <!-- ID PARA EL TEXTO -->
+                            <span id="progress-text" class="text-white">Cargando...</span>
+                        </div>
+                        <div class="h-2 w-full rounded-full bg-surface-highlight overflow-hidden">
+                            <!-- ID PARA LA BARRA DE COLOR -->
+                            <div id="progress-bar" class="h-full w-[0%] bg-primary rounded-full transition-all duration-1000 ease-out"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: Cantidad de Tickets (NUEVO) -->
+            <section class="flex flex-col gap-4">
+                <h3 class="text-lg font-bold text-white">¿Cuántos tickets deseas?</h3>
+                
+                <div class="bg-surface-dark p-6 rounded-2xl border border-white/5 flex flex-col items-center gap-6">
+                    
+                    <!-- Control de Cantidad -->
+                    <div class="flex items-center gap-6">
+                        <button id="btn-minus" class="w-12 h-12 rounded-full bg-surface-highlight text-white hover:bg-white hover:text-background-dark transition-colors flex items-center justify-center border border-white/10">
+                            <span class="material-symbols-outlined">remove</span>
+                        </button>
+                        
+                        <div class="text-center">
+                            <span id="qty-display" class="text-5xl font-bold text-white tabular-nums">1</span>
+                            <p class="text-xs text-gray-400 mt-1 uppercase tracking-wider">Tickets</p>
+                        </div>
+
+                        <button id="btn-plus" class="w-12 h-12 rounded-full bg-surface-highlight text-white hover:bg-white hover:text-background-dark transition-colors flex items-center justify-center border border-white/10">
+                            <span class="material-symbols-outlined">add</span>
+                        </button>
+                    </div>
+
+                <!-- Botones Rápidos (Ahora suman) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
+                        <button onclick="addTickets(3)" class="px-4 py-3 rounded-lg bg-surface-highlight hover:bg-primary hover:text-background-dark transition-colors text-sm font-bold border border-white/5 flex items-center justify-center gap-1">
+                            <span>+3</span> <span class="text-xs font-normal opacity-70">Tickets</span>
+                        </button>
+                        <button onclick="addTickets(5)" class="px-4 py-3 rounded-lg bg-surface-highlight hover:bg-primary hover:text-background-dark transition-colors text-sm font-bold border border-white/5 flex items-center justify-center gap-1">
+                            <span>+5</span> <span class="text-xs font-normal opacity-70">Tickets</span>
+                        </button>
+                        <button onclick="addTickets(10)" class="px-4 py-3 rounded-lg bg-surface-highlight hover:bg-primary hover:text-background-dark transition-colors text-sm font-bold border border-white/5 flex items-center justify-center gap-1">
+                            <span>+10</span> <span class="text-xs font-normal opacity-70">Tickets</span>
+                        </button>
+                        <button onclick="addTickets(20)" class="px-4 py-3 rounded-lg bg-surface-highlight hover:bg-primary hover:text-background-dark transition-colors text-sm font-bold border border-white/5 flex items-center justify-center gap-1">
+                            <span>+20</span> <span class="text-xs font-normal opacity-70">Tickets</span>
+                        </button>
+                    </div>
+
+                    <!-- Botón de Reiniciar (Opcional, útil si se pasan sumando) -->
+                    <button onclick="resetQuantity()" class="text-xs text-gray-500 hover:text-white underline mt-2">
+                        Reiniciar contador a 1
+                    </button>
+
+                    <div class="w-full bg-primary/10 p-3 rounded-lg border border-primary/20 text-center">
+                        <p class="text-primary text-sm">
+                            <span class="material-symbols-outlined align-middle text-sm mr-1">info</span>
+                            Los números se asignarán <strong>automáticamente</strong> al verificar tu pago.
+                        </p>
+                    </div>
+                </div>
+            </section>
+<!-- Datos Bancarios -->
+            <section class="rounded-xl bg-surface-dark p-5 ring-1 ring-white/5">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1">
+                        <span class="material-symbols-outlined text-background-dark text-2xl">account_balance</span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Método de Pago</p>
+                        <p class="text-base font-bold text-white">Pago Móvil Mercantil (0105)</p>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <!-- Fila Teléfono -->
+                    <div class="flex items-center justify-between rounded-lg bg-background-dark p-3 border border-white/5">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Teléfono</p>
+                            <p class="text-white font-mono font-medium">0414-1234567</p>
+                        </div>
+                        <button onclick="copiar('04141234567')" class="text-primary hover:bg-surface-highlight p-2 rounded-md transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">content_copy</span>
+                        </button>
+                    </div>
+
+                    <!-- Fila Cédula/RIF -->
+                    <div class="flex items-center justify-between rounded-lg bg-background-dark p-3 border border-white/5">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Cédula / RIF</p>
+                            <p class="text-white font-mono font-medium">J-123456789</p>
+                        </div>
+                        <button onclick="copiar('J123456789')" class="text-primary hover:bg-surface-highlight p-2 rounded-md transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">content_copy</span>
+                        </button>
+                    </div>
+
+                    <!-- NUEVO BOTÓN COPIAR TODO -->
+                    <button onclick="copyAllPaymentData()" class="w-full mt-2 flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 p-3 rounded-lg transition-all font-bold text-sm uppercase tracking-wider group">
+                        <span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">content_paste</span>
+                        Copiar Datos y Monto
+                    </button>
+                </div>
+            </section>
+        </main>
+
+    <!-- Footer Flotante -->
+        <footer class="fixed bottom-0 left-0 z-30 w-full bg-surface-dark border-t border-white/10 px-6 py-4 pb-8 shadow-[0_-5px_20px_rgba(0,0,0,0.4)]">
+            <div class="flex items-center justify-between gap-4 max-w-lg mx-auto">
+                <div class="flex flex-col">
+                    <p class="text-sm text-gray-400">Total a Pagar</p>
+                    <!-- CORRECCIÓN: El símbolo se maneja dentro del span con JS -->
+                    <p class="text-2xl font-bold text-white">
+                        <span id="total-display">...</span>
+                    </p>
+                </div>
+                <button id="btn-open-modal" class="flex-1 rounded-xl bg-primary hover:bg-primary-dark transition-colors h-14 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(19,236,91,0.3)]">
+                    <span class="text-background-dark font-extrabold text-lg">Reportar Pago</span>
+                    <span class="material-symbols-outlined text-background-dark font-bold">arrow_forward</span>
+                </button>
+            </div>
+        </footer>
+
+        <!-- MODAL DE FORMULARIO -->
+        <div id="checkout-modal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center hidden">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="modal-backdrop"></div>
+            
+            <div class="relative w-full max-w-md bg-surface-dark rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl ring-1 ring-white/10 modal-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">Confirmar Datos</h3>
+                    <button id="btn-close-modal" class="text-gray-400 hover:text-white">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                
+                <form id="payment-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Nombre Completo</label>
+                        <input type="text" id="input-name" required class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none" placeholder="Tu nombre">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Cédula</label>
+                            <input type="text" id="input-ci" required class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none" placeholder="V-123456">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Teléfono</label>
+                            <input type="tel" id="input-phone" required class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none" placeholder="0414...">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Correo Electrónico</label>
+                        <input type="email" id="input-email" required class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none" placeholder="correo@ejemplo.com">
+                    </div>
+
+                    <div class="pt-2 border-t border-white/10 mt-2">
+                        <div class="bg-primary/10 p-2 rounded mb-2 text-center">
+                            <p class="text-xs text-primary font-bold">Monto a transferir: $<span id="modal-total">5.00</span></p>
+                        </div>
+                        <label class="block text-xs text-white mb-1 uppercase font-bold">Referencia (4 últimos dígitos)</label>
+                        <input type="text" id="input-ref" required maxlength="4" class="w-full bg-background-dark border border-primary/50 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none text-center font-mono text-lg tracking-widest" placeholder="0000">
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" class="w-full rounded-xl bg-primary hover:bg-primary-dark transition-colors h-12 flex items-center justify-center gap-2 font-bold text-background-dark shadow-[0_0_20px_rgba(19,236,91,0.3)]">
+                            <span id="btn-text">Verificar y Obtener Números</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- NUEVOS ELEMENTOS DE UI (Pegar antes del script) -->
+    <!-- ========================================== -->
+
+    <!-- 1. Notificación Flotante (Toast) -->
+    <div id="toast-notification" class="fixed top-5 right-5 z-[60] flex items-center gap-3 bg-surface-highlight border-l-4 border-primary px-4 py-3 rounded shadow-2xl transform transition-all duration-300 translate-x-full opacity-0">
+        <span class="material-symbols-outlined text-primary">check_circle</span>
+        <div>
+            <h4 class="text-sm font-bold text-white">¡Listo!</h4>
+            <p id="toast-message" class="text-xs text-gray-300">Mensaje de acción</p>
+        </div>
+    </div>
+
+    <!-- 2. Modal de Compra Exitosa -->
+    <div id="success-modal" class="fixed inset-0 z-[70] flex items-center justify-center hidden">
+        <!-- Fondo oscuro -->
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm animate-fade-in"></div>
+        
+        <!-- Tarjeta de Éxito -->
+        <div class="relative w-full max-w-sm bg-surface-dark rounded-2xl p-6 shadow-2xl ring-1 ring-primary/20 transform transition-all scale-95 opacity-0 animate-scale-in text-center mx-4">
+            
+            <!-- Icono Animado -->
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4">
+                <span class="material-symbols-outlined text-5xl text-primary animate-bounce-short">celebration</span>
+            </div>
+
+            <h2 class="text-2xl font-bold text-white mb-2">¡Compra Exitosa!</h2>
+            <p class="text-gray-400 text-sm mb-6">Hemos recibido tu reporte de pago. Aquí tienes tus números asignados:</p>
+
+            <!-- Contenedor de Números -->
+            <div class="bg-background-dark rounded-xl p-4 border border-white/5 mb-6">
+                <div id="assigned-numbers-display" class="flex flex-wrap gap-2 justify-center">
+                    <!-- Aquí se inyectan los números con JS -->
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-500 mb-6">Hemos enviado el comprobante a tu correo electrónico.</p>
+
+            <button onclick="location.reload()" class="w-full py-3 rounded-xl bg-primary hover:bg-primary-dark text-background-dark font-bold transition-colors">
+                Entendido, ¡Gracias!
+            </button>
+        </div>
+    </div>
+
+    <!-- Tu Lógica JS -->
+    <script type="module" src="logic.js"></script>
+</body>
+
+
+
+</html>
