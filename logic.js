@@ -252,18 +252,27 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     const btnText = document.getElementById('btn-text');
     const originalText = btnText.innerText;
     
-    btnText.innerText = "Procesando...";
+    // Bloquear botón para que no den doble clic
+    btnText.innerText = "Verificando con el Banco...";
     btnText.disabled = true;
     
+    // 1. Unir Tipo de Cédula + Número (V + 123456)
+    const ciType = document.getElementById('input-ci-type').value;
+    const ciNumber = document.getElementById('input-ci-number').value;
+    const fullCi = ciType + ciNumber; 
+
+    // 2. Recopilar datos
     const userData = {
         name: document.getElementById('input-name').value,
-        ci: document.getElementById('input-ci').value,
+        ci: fullCi,
         phone: document.getElementById('input-phone').value,
         email: document.getElementById('input-email').value, 
         ref: document.getElementById('input-ref').value,
+        paymentDate: document.getElementById('input-date').value, // Fecha seleccionada
     };
 
     try {
+        // 3. Enviar al Servidor
         const response = await fetch(BACKEND_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -275,9 +284,31 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
 
         const result = await response.json();
 
-        if (!response.ok) throw new Error(result.error || "Error del servidor");
+        // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
+         // CASO A: DUPLICADO (409) - NUEVO
+        if (response.status === 409) {
+            showToast("⚠️ Esta referencia ya fue utilizada.");
+            throw new Error("SILENT_FAIL");
+        }
+        
+        // CASO A: El Servidor dice "Error 402" (Pago no encontrado)
+        if (response.status === 402) {
+            // Preparamos el monto para mostrarlo en el error (Ej: "50.00 $")
+            const totalShow = (quantity * TICKET_PRICE).toFixed(2) + " " + CURRENCY;
+            
+            // Abrimos la ventana roja con los detalles
+            showPaymentError(userData.ref, userData.paymentDate, totalShow);
+            
+            // Lanzamos un error silencioso para saltar al 'catch' y detener todo
+            throw new Error("SILENT_FAIL"); 
+        }
 
-        // Mostrar Éxito
+        // CASO B: Otro tipo de error (Ej: Base de datos caída)
+        if (!response.ok) {
+            throw new Error(result.error || "Error desconocido del servidor");
+        }
+
+        // CASO C: ¡ÉXITO! (Pago encontrado)
         const successModal = document.getElementById('success-modal');
         const numbersContainer = document.getElementById('assigned-numbers-display');
         
@@ -291,17 +322,50 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
             });
         }
 
-        modal.classList.add('hidden'); 
-        successModal.classList.remove('hidden'); 
+        modal.classList.add('hidden'); // Cerrar formulario
+        successModal.classList.remove('hidden'); // Abrir éxito
 
     } catch (error) {
-        console.error("Error:", error);
-        showToast(error.message);
+        console.error("Resultado:", error);
+        
+        // Si el error NO es el silencioso (el del modal rojo), mostramos el Toast normal
+        if (error.message !== "SILENT_FAIL") {
+            showToast(error.message);
+        }
+        
+        // Restaurar botón
         btnText.innerText = originalText;
         btnText.disabled = false;
     }
 });
 
+// Establecer fecha de hoy por defecto en el input
+const dateInput = document.getElementById('input-date');
+if (dateInput) {
+    const today = new Date();
+    // Ajuste para zona horaria (evita que salga ayer si es tarde en la noche)
+    const localIso = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    dateInput.value = localIso;
+}
+
+// Funciones del Modal de Error
+const errorModal = document.getElementById('payment-error-modal');
+
+window.showPaymentError = (ref, date, amount) => {
+    // 1. Llenar los datos para que el usuario compare
+    document.getElementById('err-ref').innerText = ref;
+    document.getElementById('err-date').innerText = date;
+    document.getElementById('err-amount').innerText = amount; // Ya viene con moneda
+
+    // 2. Mostrar modal
+    errorModal.classList.remove('hidden');
+    setTimeout(() => errorModal.classList.remove('opacity-0'), 10);
+};
+
+window.closeErrorModal = () => {
+    errorModal.classList.add('opacity-0');
+    setTimeout(() => errorModal.classList.add('hidden'), 300);
+};
 // ==========================================
 // 9. INICIALIZAR APP
 // ==========================================

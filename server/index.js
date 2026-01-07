@@ -10,9 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
-// 1. CONFIGURACIÓN
-// ==========================================
+// CONFIGURACIÓN
 const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -27,35 +25,26 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// ==========================================
-// 2. UTILIDADES CRÍTICAS
-// ==========================================
-
+// UTILIDADES
 const encryptMercantil = (message, key) => {
     const algorythm = "aes-128-ecb";
     const hash = crypto.createHash('sha256');
     hash.update(key);
     const keyDigest = hash.digest('hex');
-    // Tomamos los primeros 32 caracteres (16 bytes)
     const firstHalf = keyDigest.slice(0, 32); 
     const keyHex = Buffer.from(firstHalf, 'hex');
-    
     const cipher = crypto.createCipheriv(algorythm, keyHex, null);
     let ciphertext = cipher.update(message, 'utf8', 'base64');
     ciphertext += cipher.final('base64');
     return ciphertext;
 };
 
-// Formato de Fecha Venezuela (YYYY-MM-DD)
 const getVenezuelaDate = (userDate) => {
-    // Si el usuario envió fecha, la usamos. Si no, usamos hoy.
     if(userDate) return userDate;
-    
     const date = new Date().toLocaleString("en-CA", {timeZone: "America/Caracas"});
     return date.split(',')[0]; 
 };
 
-// Limpiar Teléfono (58414...)
 const formatPhone = (phone) => {
     let clean = phone.replace(/\D/g, ''); 
     if (clean.startsWith('0')) clean = clean.substring(1); 
@@ -63,41 +52,38 @@ const formatPhone = (phone) => {
     return clean;
 };
 
-// 🔴 NUEVO: Limpiar Cédula (V12345678)
-const formatID = (id) => {
-    if (!id) return "";
-    // Quitar espacios y guiones, convertir a mayúscula
-    let clean = id.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    return clean; 
-};
+// 🔴 NUEVA FUNCIÓN: Verificar si la referencia ya existe en BD
+async function checkReferenceExists(ref) {
+    if (ref === "1234") return false; // Permitir 1234 múltiples veces para pruebas
+    
+    const snapshot = await db.collection('ventas')
+        .where('ref', '==', ref)
+        .where('status', 'in', ['pagado_verificado', 'pendiente_verificacion']) 
+        .get();
+        
+    return !snapshot.empty; // Retorna TRUE si ya existe
+}
 
-// ==========================================
-// 3. LÓGICA DE VERIFICACIÓN
-// ==========================================
+// LÓGICA DE VERIFICACIÓN (MODIFICADA PARA RETORNAR DATOS)
 async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, paymentDate) {
-    
-    // Formato de Monto ("200.00")
-    const amountString = rawAmount.toFixed(2);
-    
-    // Datos limpios
+    const amountString = Number.isInteger(rawAmount) ? rawAmount.toString() : rawAmount.toFixed(2);
     const cleanPhone = formatPhone(userPhone);
-    const cleanID = formatID(userCi); // Ej: "V12345678"
     const dateToSend = getVenezuelaDate(paymentDate);
 
-    console.log(`\n🔍 --- INICIANDO VERIFICACIÓN ---`);
-    console.log(`👤 Cliente: ${cleanID} | Tlf: ${cleanPhone}`);
-    console.log(`💰 Datos: Ref ${refNumber} | Monto ${amountString} | Fecha ${dateToSend}`);
+    console.log(`Verificando: Ref ${refNumber} | Monto ${amountString}`);
 
-    if (refNumber === "1234") return true; 
+    // Bypass de prueba (Devuelve datos simulados)
+    if (refNumber === "1234") {
+        return { 
+            success: true, 
+            data: { 
+                authorization_code: "TEST-123", 
+                trx_type: "prueba_sistema" 
+            } 
+        }; 
+    }
 
     try {
-        const secretKey = process.env.MERCANTIL_SECRET_KEY;
-        const myPhone = process.env.MERCANTIL_PHONE_NUMBER; 
-        
-        // Encriptar teléfonos
-        const encryptedDest = encryptMercantil(myPhone, secretKey);
-        const encryptedOrigin = encryptMercantil(cleanPhone, secretKey);
-
         const body = {
             merchant_identify: {
                 integratorId: process.env.MERCANTIL_INTEGRATOR_ID.toString(),
@@ -107,27 +93,17 @@ async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, p
             client_identify: {
                 ipaddress: '127.0.0.1',
                 browser_agent: 'Chrome 18.1.3', 
-                mobile: {
-                    manufacturer: 'Samsung',
-                }
+                mobile: { manufacturer: 'Samsung' }
             },
             search_by: {
                 currency: 'ves',
                 amount: amountString, 
-                destination_mobile_number: encryptedDest,
-                origin_mobile_number: encryptedOrigin,
+                destination_mobile_number: encryptMercantil(process.env.MERCANTIL_PHONE_NUMBER, process.env.MERCANTIL_SECRET_KEY),
+                origin_mobile_number: encryptMercantil(cleanPhone, process.env.MERCANTIL_SECRET_KEY),
                 payment_reference: refNumber,
                 trx_date: dateToSend
-                // Nota: Aunque la API de búsqueda se basa en Tlf+Ref+Monto,
-                // si en el futuro necesitas enviar la cédula, iría aquí como 'payer_id'
-                // payer_id: cleanID 
             }
         };
-
-        // 🔴🔴 AQUÍ IMPRIMIMOS EL JSON EXACTO 🔴🔴
-        console.log("\n📦 PAYLOAD ENVIADO AL BANCO:");
-        console.log(JSON.stringify(body, null, 2));
-        console.log("--------------------------------\n");
 
         const config = {
             headers: {
@@ -139,32 +115,23 @@ async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, p
         const response = await axios.post(process.env.MERCANTIL_API_URL, body, config);
         const data = response.data;
 
-        console.log("📡 RESPUESTA DEL BANCO:");
-        console.log(JSON.stringify(data, null, 2));
-
         if (data.transaction_list) {
             const transactions = Object.values(data.transaction_list);
             if (transactions.length > 0) {
-                console.log("✅ PAGO ENCONTRADO.");
-                return true;
+                // 🔴 ÉXITO: Retornamos TRUE y los DATOS DEL BANCO
+                return { success: true, data: transactions[0] };
             }
         }
         
-        return false;
+        return { success: false };
 
     } catch (error) {
-        if (error.response) {
-            console.error("\n❌ ERROR API MERCANTIL:", JSON.stringify(error.response.data, null, 2));
-        } else {
-            console.error("\n❌ ERROR CONEXIÓN:", error.message);
-        }
-        return false;
+        console.error("Error Banco:", error.message);
+        return { success: false };
     }
 }
 
-// ==========================================
-// 4. FUNCIONES DE LA RIFA (Sin cambios)
-// ==========================================
+// FUNCIONES RIFA
 async function getRaffleConfig() {
   const doc = await db.collection('settings').doc('general').get();
   if (!doc.exists) return { totalTickets: 100, ticketPrice: 5, currency: '$' }; 
@@ -183,10 +150,7 @@ async function getAvailableNumbers(totalTickets) {
   return allNumbers.filter(n => !soldList.includes(n));
 }
 
-// ==========================================
-// 5. ENDPOINTS
-// ==========================================
-
+// ENDPOINTS
 app.post('/api/config', async (req, res) => {
   try {
     const { totalTickets, ticketPrice, currency, manualSold, images } = req.body;
@@ -207,6 +171,7 @@ app.get('/api/config', async (req, res) => {
   res.json(config);
 });
 
+// --- COMPRA PRINCIPAL (ACTUALIZADA) ---
 app.post('/api/comprar', async (req, res) => {
   try {
     const { userData, quantity } = req.body;
@@ -218,27 +183,29 @@ app.post('/api/comprar', async (req, res) => {
 
     if (!userData || !quantity) return res.status(400).json({ error: 'Faltan datos' });
 
-    const rawAmount = quantity * PRICE;
-    
-    // Obtener fecha del formulario o usar hoy (y asegurar formato YYYY-MM-DD)
-    const dateToCheck = getVenezuelaDate(userData.paymentDate);
-
-    // VALIDAR
-    const isValid = await verifyMercantilPayment(
-        userData.ci, 
-        userData.phone, 
-        userData.ref, 
-        rawAmount,
-        dateToCheck 
-    );
-
-    if (!isValid) {
-        return res.status(402).json({ 
-            error: 'Pago no encontrado. Revisa la consola del servidor para ver qué se envió.' 
+    // 1. VALIDAR SI LA REFERENCIA YA SE USÓ (Prevención de Fraude)
+    const isUsed = await checkReferenceExists(userData.ref);
+    if (isUsed) {
+        return res.status(409).json({ // 409 = Conflict
+            error: 'Esta referencia bancaria ya fue registrada previamente. No se puede usar dos veces.' 
         });
     }
 
-    // PROCESAR
+    // 2. VALIDAR PAGO CON BANCO
+    const rawAmount = quantity * PRICE;
+    const dateToCheck = getVenezuelaDate(userData.paymentDate);
+
+    const bankResult = await verifyMercantilPayment(
+        userData.ci, userData.phone, userData.ref, rawAmount, dateToCheck 
+    );
+
+    if (!bankResult.success) {
+        return res.status(402).json({ 
+            error: 'Pago no encontrado. Verifica Fecha, Referencia y Monto.' 
+        });
+    }
+
+    // 3. PROCESAR VENTA (Si todo está OK)
     const available = await getAvailableNumbers(TOTAL_TICKETS);
     if (available.length < quantity) {
       return res.status(400).json({ error: `Solo quedan ${available.length} números disponibles.` });
@@ -249,13 +216,15 @@ app.post('/api/comprar', async (req, res) => {
 
     const newSale = {
       ...userData,
-      ci: formatID(userData.ci), // Guardamos la CI limpia y con prefijo en Firebase
       ticketsQty: parseInt(quantity),
       totalAmount: rawAmount,
       currency: CURRENCY,
       numbers: assignedNumbers,
       purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
-      status: 'pagado_verificado'
+      status: 'pagado_verificado',
+      
+      // 🔴 GUARDAMOS LOS DATOS DEL BANCO PARA AUDITORÍA 🔴
+      bankDetails: bankResult.data || {} 
     };
 
     await db.collection('ventas').add(newSale);
@@ -274,7 +243,11 @@ app.post('/api/comprar', async (req, res) => {
                  <span style="display: block; font-size: 12px; color: #555;">TUS NÚMEROS</span>
                  <strong style="font-size: 24px; color: #102216;">${assignedNumbers.join(' - ')}</strong>
               </div>
-              <p>Total: ${rawAmount.toFixed(2)} ${CURRENCY}</p>
+              
+              <div style="color: #666; font-size: 12px; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                <p>Ref: ${userData.ref}</p>
+                <p>Auth Banco: ${bankResult.data ? bankResult.data.authorization_code : 'N/A'}</p>
+              </div>
            </div>
         </div>
       `

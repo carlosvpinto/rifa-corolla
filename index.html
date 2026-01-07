@@ -177,9 +177,9 @@
                     <div class="flex items-center justify-between rounded-lg bg-background-dark p-3 border border-white/5">
                         <div>
                             <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Teléfono</p>
-                            <p class="text-white font-mono font-medium">0414-1234567</p>
+                            <p class="text-white font-mono font-medium">04243454032</p>
                         </div>
-                        <button onclick="copiar('04141234567')" class="text-primary hover:bg-surface-highlight p-2 rounded-md transition-colors">
+                        <button onclick="copiar('04243454032')" class="text-primary hover:bg-surface-highlight p-2 rounded-md transition-colors">
                             <span class="material-symbols-outlined text-[20px]">content_copy</span>
                         </button>
                     </div>
@@ -188,9 +188,9 @@
                     <div class="flex items-center justify-between rounded-lg bg-background-dark p-3 border border-white/5">
                         <div>
                             <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Cédula / RIF</p>
-                            <p class="text-white font-mono font-medium">J-123456789</p>
+                            <p class="text-white font-mono font-medium">J-506818817</p>
                         </div>
-                        <button onclick="copiar('J123456789')" class="text-primary hover:bg-surface-highlight p-2 rounded-md transition-colors">
+                        <button onclick="copiar('J506818817')" class="text-primary hover:bg-surface-highlight p-2 rounded-md transition-colors">
                             <span class="material-symbols-outlined text-[20px]">content_copy</span>
                         </button>
                     </div>
@@ -238,15 +238,49 @@
                         <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Nombre Completo</label>
                         <input type="text" id="input-name" required class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none" placeholder="Tu nombre">
                     </div>
+
+                      <div class="mt-3">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Fecha de la Transacción</label>
+                        <input type="date" id="input-date" required class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none" >
+                    </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+               <div class="grid grid-cols-2 gap-4">
+                        <!-- CÉDULA (Solo números + Teclado Numérico) -->
                         <div>
                             <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Cédula</label>
-                            <input type="text" id="input-ci" required class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none" placeholder="V-123456">
+                            <div class="flex">
+                                <select id="input-ci-type" class="rounded-l-lg bg-surface-highlight border border-white/10 text-white p-3 outline-none focus:ring-1 focus:ring-primary w-16 text-center appearance-none cursor-pointer font-bold">
+                                    <option value="V">V</option>
+                                    <option value="J">J</option>
+                                    <option value="E">E</option>
+                                    <option value="G">G</option>
+                                </select>
+                                <input 
+                                    type="tel" 
+                                    id="input-ci-number" 
+                                    required 
+                                    maxlength="9"
+                                    inputmode="numeric" 
+                                    pattern="[0-9]*"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                    class="w-full bg-background-dark border border-white/10 border-l-0 rounded-r-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none placeholder-gray-600" 
+                                    placeholder="12345678">
+                            </div>
                         </div>
+                        
+                        <!-- TELÉFONO (Solo números + Teclado Numérico) -->
                         <div>
                             <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Teléfono</label>
-                            <input type="tel" id="input-phone" required class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none" placeholder="0414...">
+                            <input 
+                                type="tel" 
+                                id="input-phone" 
+                                required 
+                                maxlength="11"
+                                inputmode="numeric" 
+                                pattern="[0-9]*"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                class="w-full bg-background-dark border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none placeholder-gray-600" 
+                                placeholder="04141234567">
                         </div>
                     </div>
 
@@ -259,8 +293,18 @@
                         <div class="bg-primary/10 p-2 rounded mb-2 text-center">
                             <p class="text-xs text-primary font-bold">Monto a transferir: $<span id="modal-total">5.00</span></p>
                         </div>
-                        <label class="block text-xs text-white mb-1 uppercase font-bold">Referencia (4 últimos dígitos)</label>
-                        <input type="text" id="input-ref" required maxlength="4" class="w-full bg-background-dark border border-primary/50 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none text-center font-mono text-lg tracking-widest" placeholder="0000">
+                        <label class="block text-xs text-white mb-1 uppercase font-bold">Referencia (6 últimos dígitos)</label>
+                        <!-- Busca esta línea en tu index.html y reemplázala completa -->
+                        <input 
+                            type="tel" 
+                            id="input-ref" 
+                            required 
+                            maxlength="6" 
+                            inputmode="numeric" 
+                            pattern="[0-9]*"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                            class="w-full bg-background-dark border border-primary/50 rounded-lg p-3 text-white focus:ring-2 focus:ring-primary outline-none text-center font-mono text-lg tracking-widest" 
+                            placeholder="123456">
                     </div>
 
                     <div class="pt-4">
@@ -276,6 +320,53 @@
     <!-- ========================================== -->
     <!-- NUEVOS ELEMENTOS DE UI (Pegar antes del script) -->
     <!-- ========================================== -->
+
+<!-- 3. Modal de Error de Pago (Detallado) -->
+    <div id="payment-error-modal" class="fixed inset-0 z-[80] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeErrorModal()"></div>
+        
+        <div class="relative w-full max-w-sm bg-surface-dark rounded-2xl p-6 shadow-2xl ring-1 ring-red-500/30 transform scale-95 transition-transform duration-300 mx-4">
+            
+            <div class="flex flex-col items-center text-center mb-4">
+                <div class="p-4 bg-red-500/10 rounded-full text-red-500 mb-3 animate-pulse">
+                    <span class="material-symbols-outlined text-4xl">search_off</span>
+                </div>
+                <h3 class="text-xl font-bold text-white">Pago No Encontrado</h3>
+                <p class="text-sm text-gray-400 mt-1">El banco no encontró coincidencias.</p>
+            </div>
+
+            <!-- Resumen de lo que se envió -->
+            <div class="bg-black/40 rounded-lg p-4 border border-white/5 mb-4 text-left">
+                <p class="text-xs text-gray-500 uppercase font-bold mb-2">Datos enviados:</p>
+                <ul class="text-sm space-y-1 text-gray-300">
+                    <li class="flex justify-between"><span>Referencia:</span> <strong class="text-white" id="err-ref">...</strong></li>
+                    <li class="flex justify-between"><span>Fecha:</span> <strong class="text-white" id="err-date">...</strong></li>
+                    <li class="flex justify-between"><span>Monto:</span> <strong class="text-white" id="err-amount">...</strong></li>
+                </ul>
+            </div>
+
+            <!-- Checklist de posibles causas -->
+            <div class="space-y-2 mb-6">
+                <p class="text-xs text-red-400 font-bold uppercase">Verifica lo siguiente:</p>
+                <div class="flex gap-3 items-start text-xs text-gray-400">
+                    <span class="material-symbols-outlined text-sm text-red-500 shrink-0">calendar_today</span>
+                    <p>La fecha debe ser la del comprobante (no la de hoy).</p>
+                </div>
+                <div class="flex gap-3 items-start text-xs text-gray-400">
+                    <span class="material-symbols-outlined text-sm text-red-500 shrink-0">attach_money</span>
+                    <p>El monto debe ser exacto (sin comisiones).</p>
+                </div>
+                <div class="flex gap-3 items-start text-xs text-gray-400">
+                    <span class="material-symbols-outlined text-sm text-red-500 shrink-0">tag</span>
+                    <p>Usa los últimos 6 dígitos de la referencia.</p>
+                </div>
+            </div>
+
+            <button onclick="closeErrorModal()" class="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition-colors shadow-lg shadow-red-900/20">
+                Corregir Datos
+            </button>
+        </div>
+    </div>
 
     <!-- 1. Notificación Flotante (Toast) -->
     <div id="toast-notification" class="fixed top-5 right-5 z-[60] flex items-center gap-3 bg-surface-highlight border-l-4 border-primary px-4 py-3 rounded shadow-2xl transform transition-all duration-300 translate-x-full opacity-0">
