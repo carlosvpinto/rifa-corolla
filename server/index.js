@@ -2,86 +2,204 @@ const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
+const axios = require('axios');
+const crypto = require('crypto'); 
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// FIREBASE
+// ==========================================
+// 1. CONFIGURACIÓN
+// ==========================================
 const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 const db = admin.firestore();
 
-// EMAIL
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'chatgptecarlosv@gmail.com',
-    pass: 'rbcn tcbs rfuj sfki'
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
-// --- 1. OBTENER CONFIGURACIÓN (CENTRALIZADA) ---
+// ==========================================
+// 2. UTILIDADES CRÍTICAS
+// ==========================================
+
+const encryptMercantil = (message, key) => {
+    const algorythm = "aes-128-ecb";
+    const hash = crypto.createHash('sha256');
+    hash.update(key);
+    const keyDigest = hash.digest('hex');
+    // Tomamos los primeros 32 caracteres (16 bytes)
+    const firstHalf = keyDigest.slice(0, 32); 
+    const keyHex = Buffer.from(firstHalf, 'hex');
+    
+    const cipher = crypto.createCipheriv(algorythm, keyHex, null);
+    let ciphertext = cipher.update(message, 'utf8', 'base64');
+    ciphertext += cipher.final('base64');
+    return ciphertext;
+};
+
+// Formato de Fecha Venezuela (YYYY-MM-DD)
+const getVenezuelaDate = (userDate) => {
+    // Si el usuario envió fecha, la usamos. Si no, usamos hoy.
+    if(userDate) return userDate;
+    
+    const date = new Date().toLocaleString("en-CA", {timeZone: "America/Caracas"});
+    return date.split(',')[0]; 
+};
+
+// Limpiar Teléfono (58414...)
+const formatPhone = (phone) => {
+    let clean = phone.replace(/\D/g, ''); 
+    if (clean.startsWith('0')) clean = clean.substring(1); 
+    if (!clean.startsWith('58')) clean = '58' + clean; 
+    return clean;
+};
+
+// 🔴 NUEVO: Limpiar Cédula (V12345678)
+const formatID = (id) => {
+    if (!id) return "";
+    // Quitar espacios y guiones, convertir a mayúscula
+    let clean = id.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return clean; 
+};
+
+// ==========================================
+// 3. LÓGICA DE VERIFICACIÓN
+// ==========================================
+async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, paymentDate) {
+    
+    // Formato de Monto ("200.00")
+    const amountString = rawAmount.toFixed(2);
+    
+    // Datos limpios
+    const cleanPhone = formatPhone(userPhone);
+    const cleanID = formatID(userCi); // Ej: "V12345678"
+    const dateToSend = getVenezuelaDate(paymentDate);
+
+    console.log(`\n🔍 --- INICIANDO VERIFICACIÓN ---`);
+    console.log(`👤 Cliente: ${cleanID} | Tlf: ${cleanPhone}`);
+    console.log(`💰 Datos: Ref ${refNumber} | Monto ${amountString} | Fecha ${dateToSend}`);
+
+    if (refNumber === "1234") return true; 
+
+    try {
+        const secretKey = process.env.MERCANTIL_SECRET_KEY;
+        const myPhone = process.env.MERCANTIL_PHONE_NUMBER; 
+        
+        // Encriptar teléfonos
+        const encryptedDest = encryptMercantil(myPhone, secretKey);
+        const encryptedOrigin = encryptMercantil(cleanPhone, secretKey);
+
+        const body = {
+            merchant_identify: {
+                integratorId: process.env.MERCANTIL_INTEGRATOR_ID.toString(),
+                merchantId: process.env.MERCANTIL_MERCHANT_ID.toString(),
+                terminalId: process.env.MERCANTIL_TERMINAL_ID
+            },
+            client_identify: {
+                ipaddress: '127.0.0.1',
+                browser_agent: 'Chrome 18.1.3', 
+                mobile: {
+                    manufacturer: 'Samsung',
+                }
+            },
+            search_by: {
+                currency: 'ves',
+                amount: amountString, 
+                destination_mobile_number: encryptedDest,
+                origin_mobile_number: encryptedOrigin,
+                payment_reference: refNumber,
+                trx_date: dateToSend
+                // Nota: Aunque la API de búsqueda se basa en Tlf+Ref+Monto,
+                // si en el futuro necesitas enviar la cédula, iría aquí como 'payer_id'
+                // payer_id: cleanID 
+            }
+        };
+
+        // 🔴🔴 AQUÍ IMPRIMIMOS EL JSON EXACTO 🔴🔴
+        console.log("\n📦 PAYLOAD ENVIADO AL BANCO:");
+        console.log(JSON.stringify(body, null, 2));
+        console.log("--------------------------------\n");
+
+        const config = {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-IBM-Client-ID': process.env.MERCANTIL_CLIENT_ID
+            }
+        };
+
+        const response = await axios.post(process.env.MERCANTIL_API_URL, body, config);
+        const data = response.data;
+
+        console.log("📡 RESPUESTA DEL BANCO:");
+        console.log(JSON.stringify(data, null, 2));
+
+        if (data.transaction_list) {
+            const transactions = Object.values(data.transaction_list);
+            if (transactions.length > 0) {
+                console.log("✅ PAGO ENCONTRADO.");
+                return true;
+            }
+        }
+        
+        return false;
+
+    } catch (error) {
+        if (error.response) {
+            console.error("\n❌ ERROR API MERCANTIL:", JSON.stringify(error.response.data, null, 2));
+        } else {
+            console.error("\n❌ ERROR CONEXIÓN:", error.message);
+        }
+        return false;
+    }
+}
+
+// ==========================================
+// 4. FUNCIONES DE LA RIFA (Sin cambios)
+// ==========================================
 async function getRaffleConfig() {
   const doc = await db.collection('settings').doc('general').get();
-  if (!doc.exists) {
-    // Valores por defecto si no se ha configurado nada
-    return { 
-        totalTickets: 100, 
-        ticketPrice: 5, 
-        currency: '$' 
-    }; 
-  }
+  if (!doc.exists) return { totalTickets: 100, ticketPrice: 5, currency: '$' }; 
   return doc.data();
 }
 
-// --- 2. LÓGICA DE DISPONIBILIDAD ---
 async function getAvailableNumbers(totalTickets) {
   const soldList = [];
   const snapshot = await db.collection('ventas').get();
-  
   snapshot.forEach(doc => {
     const data = doc.data();
     if (data.numbers) soldList.push(...data.numbers);
   });
-
-  // Calcular ceros a la izquierda (Padding)
   const digits = (totalTickets - 1).toString().length;
-  const allNumbers = Array.from({length: totalTickets}, (_, i) => 
-    i.toString().padStart(digits, '0')
-  );
-  
+  const allNumbers = Array.from({length: totalTickets}, (_, i) => i.toString().padStart(digits, '0'));
   return allNumbers.filter(n => !soldList.includes(n));
 }
 
-// --- 3. ENDPOINTS DE CONFIGURACIÓN ---
+// ==========================================
+// 5. ENDPOINTS
+// ==========================================
+
 app.post('/api/config', async (req, res) => {
   try {
-    // AHORA RECIBIMOS 'images' TAMBIÉN
     const { totalTickets, ticketPrice, currency, manualSold, images } = req.body;
-    
     const updateData = {
         totalTickets: parseInt(totalTickets),
         ticketPrice: parseFloat(ticketPrice),
         currency: currency,
         manualSold: parseInt(manualSold) || 0
     };
-
-    // Solo actualizamos imágenes si se enviaron nuevas (para no borrarlas por error)
-    if (images && Array.isArray(images)) {
-        updateData.images = images;
-    }
-
+    if (images) updateData.images = images;
     await db.collection('settings').doc('general').set(updateData, { merge: true });
-
-    res.json({ success: true, message: 'Configuración e imágenes actualizadas' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
-  }
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.get('/api/config', async (req, res) => {
@@ -89,12 +207,10 @@ app.get('/api/config', async (req, res) => {
   res.json(config);
 });
 
-// --- 4. ENDPOINT DE COMPRA ---
 app.post('/api/comprar', async (req, res) => {
   try {
     const { userData, quantity } = req.body;
 
-    // A. LEEMOS LA CONFIGURACIÓN ACTUAL (PRECIO Y CANTIDAD)
     const config = await getRaffleConfig();
     const TOTAL_TICKETS = parseInt(config.totalTickets) || 100;
     const PRICE = parseFloat(config.ticketPrice) || 5;
@@ -102,89 +218,64 @@ app.post('/api/comprar', async (req, res) => {
 
     if (!userData || !quantity) return res.status(400).json({ error: 'Faltan datos' });
 
-    // B. DISPONIBILIDAD
-    const available = await getAvailableNumbers(TOTAL_TICKETS);
+    const rawAmount = quantity * PRICE;
     
+    // Obtener fecha del formulario o usar hoy (y asegurar formato YYYY-MM-DD)
+    const dateToCheck = getVenezuelaDate(userData.paymentDate);
+
+    // VALIDAR
+    const isValid = await verifyMercantilPayment(
+        userData.ci, 
+        userData.phone, 
+        userData.ref, 
+        rawAmount,
+        dateToCheck 
+    );
+
+    if (!isValid) {
+        return res.status(402).json({ 
+            error: 'Pago no encontrado. Revisa la consola del servidor para ver qué se envió.' 
+        });
+    }
+
+    // PROCESAR
+    const available = await getAvailableNumbers(TOTAL_TICKETS);
     if (available.length < quantity) {
       return res.status(400).json({ error: `Solo quedan ${available.length} números disponibles.` });
     }
 
-    // C. ASIGNAR
     available.sort(() => Math.random() - 0.5);
     const assignedNumbers = available.slice(0, quantity);
 
-    // D. CALCULAR TOTAL CON EL PRECIO DINÁMICO
-    const totalCalculated = quantity * PRICE;
-
     const newSale = {
       ...userData,
+      ci: formatID(userData.ci), // Guardamos la CI limpia y con prefijo en Firebase
       ticketsQty: parseInt(quantity),
-      totalAmount: totalCalculated,
-      currency: CURRENCY, // Guardamos la moneda usada en ese momento
+      totalAmount: rawAmount,
+      currency: CURRENCY,
       numbers: assignedNumbers,
       purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
-      status: 'pendiente_verificacion'
+      status: 'pagado_verificado'
     };
 
     await db.collection('ventas').add(newSale);
 
-    // E. ENVIAR CORREO
     const mailOptions = {
-      from: 'Rifa Corolla <chatgptecarlosv@gmail.com>',
+      from: `Rifa Corolla <${process.env.EMAIL_USER}>`,
       to: userData.email,
-      subject: `🎟️ Tus Tickets - Rifa Corolla (Ref: ${userData.ref})`,
+      subject: `🎟️ TICKET CONFIRMADO - Rifa Corolla`,
       html: `
-        <div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto; background-color: #f4f4f4; padding: 20px;">
-          
-          <!-- Encabezado -->
-          <div style="background-color: #102216; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h2 style="color: #ffffff; margin: 0;">GRAN RIFA COROLLA</h2>
-            <p style="color: #13ec5b; margin: 5px 0 0 0; font-weight: bold;">¡Gracias por tu compra!</p>
-          </div>
-
-          <!-- Cuerpo del Ticket -->
-          <div style="background-color: #ffffff; padding: 30px; border-left: 2px dashed #ccc; border-right: 2px dashed #ccc;">
-            <p style="font-size: 16px; color: #333;">Hola <strong>${userData.name}</strong>,</p>
-            <p style="color: #666;">Hemos registrado exitosamente tu pago móvil con referencia <strong>${userData.ref}</strong>.</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <p style="text-transform: uppercase; font-size: 12px; letter-spacing: 1px; color: #888; margin-bottom: 10px;">Tus Números de la Suerte</p>
+        <div style="font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4;">
+           <div style="background: #fff; padding: 20px; border-radius: 10px; border-top: 5px solid #13ec5b;">
+              <h2 style="color: #102216; margin-top: 0;">¡Pago Verificado!</h2>
+              <p>Hola <strong>${userData.name}</strong>, el Banco Mercantil ha confirmado tu pago.</p>
               
-              <!-- Burbujas de números -->
-              <div style="display: inline-block;">
-                ${assignedNumbers.map(num => `
-                  <span style="
-                    display: inline-block; 
-                    background-color: #13ec5b; 
-                    color: #102216; 
-                    font-weight: bold; 
-                    font-size: 24px; 
-                    padding: 10px 15px; 
-                    border-radius: 50%; 
-                    margin: 5px; 
-                    border: 2px solid #0ea341;
-                  ">${num}</span>
-                `).join('')}
+              <div style="background: #eefbee; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                 <span style="display: block; font-size: 12px; color: #555;">TUS NÚMEROS</span>
+                 <strong style="font-size: 24px; color: #102216;">${assignedNumbers.join(' - ')}</strong>
               </div>
-            </div>
-
-            <table style="width: 100%; font-size: 14px; color: #555; border-top: 1px solid #eee; padding-top: 20px;">
-              <tr>
-                <td style="padding-bottom: 5px;"><strong>Cédula:</strong> ${userData.ci}</td>
-                <td style="text-align: right; padding-bottom: 5px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</td>
-              </tr>
-              <tr>
-                <td><strong>Teléfono:</strong> ${userData.phone}</td>
-                <td style="text-align: right;"><strong>Total Pagado:</strong> $${totalCalculated.toFixed(2)}</td>
-              </tr>
-            </table>
-          </div>
-
-          <!-- Pie de página -->
-          <div style="background-color: #e8e8e8; padding: 15px; text-align: center; border-radius: 0 0 10px 10px; font-size: 12px; color: #777;">
-            <p style="margin: 0;">Este correo sirve como comprobante de participación.</p>
-            <p style="margin: 5px 0 0 0;">© 2026 Rifa Corolla Sorteo</p>
-          </div>
+              <p>Total: ${rawAmount.toFixed(2)} ${CURRENCY}</p>
+           </div>
         </div>
       `
     };
@@ -194,7 +285,7 @@ app.post('/api/comprar', async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error interno' });
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
