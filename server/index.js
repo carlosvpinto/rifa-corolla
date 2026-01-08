@@ -327,7 +327,7 @@ app.post('/api/comprar', async (req, res) => {
         </html>
       `
     };
-    
+
     transporter.sendMail(mailOptions).catch(err => console.error("Error mail:", err));
     res.json({ success: true, numbers: assignedNumbers });
 
@@ -337,7 +337,12 @@ app.post('/api/comprar', async (req, res) => {
   }
 });
 
-const PORT = 3000;
+// 🔴 RUTA DE PRUEBA (Para que Render sepa que estamos vivos)
+app.get('/', (req, res) => {
+    res.send('API Rifa Corolla Funcionando 🚀');
+});
+
+const PORT = process.env.PORT || 3000; // Usar el puerto que Render asigne
 app.listen(PORT, () => {
-  console.log(`Servidor Backend corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor Backend corriendo en el puerto ${PORT}`);
 });
