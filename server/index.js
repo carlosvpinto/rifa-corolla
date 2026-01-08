@@ -10,7 +10,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// CONFIGURACIÓN
+// ==========================================
+// 1. CONFIGURACIÓN
+// ==========================================
 const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -25,7 +27,9 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// UTILIDADES
+// ==========================================
+// 2. UTILIDADES
+// ==========================================
 const encryptMercantil = (message, key) => {
     const algorythm = "aes-128-ecb";
     const hash = crypto.createHash('sha256');
@@ -52,19 +56,18 @@ const formatPhone = (phone) => {
     return clean;
 };
 
-// 🔴 NUEVA FUNCIÓN: Verificar si la referencia ya existe en BD
+// ==========================================
+// 3. LÓGICA DE NEGOCIO
+// ==========================================
 async function checkReferenceExists(ref) {
-    if (ref === "1234") return false; // Permitir 1234 múltiples veces para pruebas
-    
+    if (ref === "1234") return false; 
     const snapshot = await db.collection('ventas')
         .where('ref', '==', ref)
         .where('status', 'in', ['pagado_verificado', 'pendiente_verificacion']) 
         .get();
-        
-    return !snapshot.empty; // Retorna TRUE si ya existe
+    return !snapshot.empty; 
 }
 
-// LÓGICA DE VERIFICACIÓN (MODIFICADA PARA RETORNAR DATOS)
 async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, paymentDate) {
     const amountString = Number.isInteger(rawAmount) ? rawAmount.toString() : rawAmount.toFixed(2);
     const cleanPhone = formatPhone(userPhone);
@@ -72,16 +75,7 @@ async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, p
 
     console.log(`Verificando: Ref ${refNumber} | Monto ${amountString}`);
 
-    // Bypass de prueba (Devuelve datos simulados)
-    if (refNumber === "1234") {
-        return { 
-            success: true, 
-            data: { 
-                authorization_code: "TEST-123", 
-                trx_type: "prueba_sistema" 
-            } 
-        }; 
-    }
+    if (refNumber === "1234") return { success: true, data: { trx: "prueba" } }; 
 
     try {
         const body = {
@@ -118,7 +112,6 @@ async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, p
         if (data.transaction_list) {
             const transactions = Object.values(data.transaction_list);
             if (transactions.length > 0) {
-                // 🔴 ÉXITO: Retornamos TRUE y los DATOS DEL BANCO
                 return { success: true, data: transactions[0] };
             }
         }
@@ -131,10 +124,9 @@ async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, p
     }
 }
 
-// FUNCIONES RIFA
 async function getRaffleConfig() {
   const doc = await db.collection('settings').doc('general').get();
-  if (!doc.exists) return { totalTickets: 100, ticketPrice: 5, currency: '$' }; 
+  if (!doc.exists) return { totalTickets: 100, ticketPrice: 5, currency: '$', adminPin: '2026' }; 
   return doc.data();
 }
 
@@ -150,28 +142,58 @@ async function getAvailableNumbers(totalTickets) {
   return allNumbers.filter(n => !soldList.includes(n));
 }
 
-// ENDPOINTS
+// ==========================================
+// 4. ENDPOINTS
+// ==========================================
+
 app.post('/api/config', async (req, res) => {
   try {
-    const { totalTickets, ticketPrice, currency, manualSold, images } = req.body;
-    const updateData = {
-        totalTickets: parseInt(totalTickets),
-        ticketPrice: parseFloat(ticketPrice),
-        currency: currency,
-        manualSold: parseInt(manualSold) || 0
-    };
-    if (images) updateData.images = images;
+    const { totalTickets, ticketPrice, currency, manualSold, images, adminPin } = req.body;
+    
+    const updateData = {};
+    if (totalTickets !== undefined) updateData.totalTickets = parseInt(totalTickets);
+    if (ticketPrice !== undefined) updateData.ticketPrice = parseFloat(ticketPrice);
+    if (currency !== undefined) updateData.currency = currency;
+    if (manualSold !== undefined) updateData.manualSold = parseInt(manualSold);
+    if (images !== undefined) updateData.images = images;
+    
+    if (adminPin && adminPin.trim() !== "") {
+        updateData.adminPin = adminPin;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: "No se enviaron datos" });
+    }
+
     await db.collection('settings').doc('general').set(updateData, { merge: true });
-    res.json({ success: true });
+    res.json({ success: true, message: "Configuración guardada" });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.get('/api/config', async (req, res) => {
   const config = await getRaffleConfig();
-  res.json(config);
+  const publicConfig = { ...config };
+  delete publicConfig.adminPin; 
+  res.json(publicConfig);
 });
 
-// --- COMPRA PRINCIPAL (ACTUALIZADA) ---
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const { pin } = req.body;
+        const config = await getRaffleConfig();
+        const currentPin = config.adminPin || "2026";
+
+        if (pin === currentPin) {
+            res.json({ success: true });
+        } else {
+            res.status(401).json({ error: "PIN Incorrecto" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Error de servidor" });
+    }
+});
+
+// COMPRA
 app.post('/api/comprar', async (req, res) => {
   try {
     const { userData, quantity } = req.body;
@@ -183,15 +205,11 @@ app.post('/api/comprar', async (req, res) => {
 
     if (!userData || !quantity) return res.status(400).json({ error: 'Faltan datos' });
 
-    // 1. VALIDAR SI LA REFERENCIA YA SE USÓ (Prevención de Fraude)
+    // 1. CHEQUEAR DUPLICADO
     const isUsed = await checkReferenceExists(userData.ref);
-    if (isUsed) {
-        return res.status(409).json({ // 409 = Conflict
-            error: 'Esta referencia bancaria ya fue registrada previamente. No se puede usar dos veces.' 
-        });
-    }
+    if (isUsed) return res.status(409).json({ error: 'Referencia ya utilizada.' });
 
-    // 2. VALIDAR PAGO CON BANCO
+    // 2. CHEQUEAR BANCO
     const rawAmount = quantity * PRICE;
     const dateToCheck = getVenezuelaDate(userData.paymentDate);
 
@@ -200,12 +218,10 @@ app.post('/api/comprar', async (req, res) => {
     );
 
     if (!bankResult.success) {
-        return res.status(402).json({ 
-            error: 'Pago no encontrado. Verifica Fecha, Referencia y Monto.' 
-        });
+        return res.status(402).json({ error: 'Pago no encontrado. Verifica Fecha, Referencia y Monto.' });
     }
 
-    // 3. PROCESAR VENTA (Si todo está OK)
+    // 3. VENDER
     const available = await getAvailableNumbers(TOTAL_TICKETS);
     if (available.length < quantity) {
       return res.status(400).json({ error: `Solo quedan ${available.length} números disponibles.` });
@@ -222,37 +238,96 @@ app.post('/api/comprar', async (req, res) => {
       numbers: assignedNumbers,
       purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
       status: 'pagado_verificado',
-      
-      // 🔴 GUARDAMOS LOS DATOS DEL BANCO PARA AUDITORÍA 🔴
-      bankDetails: bankResult.data || {} 
+      bankDetails: bankResult.data || {}
     };
 
     await db.collection('ventas').add(newSale);
 
+    // 4. ENVIAR CORREO (DISEÑO MEJORADO CON DETALLES)
+    // 4. ENVIAR CORREO (DISEÑO TICKET REALISTA)
     const mailOptions = {
       from: `Rifa Corolla <${process.env.EMAIL_USER}>`,
       to: userData.email,
-      subject: `🎟️ TICKET CONFIRMADO - Rifa Corolla`,
+      subject: `🎫 TU BOLETO DIGITAL - Ref: ${userData.ref}`,
       html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4;">
-           <div style="background: #fff; padding: 20px; border-radius: 10px; border-top: 5px solid #13ec5b;">
-              <h2 style="color: #102216; margin-top: 0;">¡Pago Verificado!</h2>
-              <p>Hola <strong>${userData.name}</strong>, el Banco Mercantil ha confirmado tu pago.</p>
-              
-              <div style="background: #eefbee; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
-                 <span style="display: block; font-size: 12px; color: #555;">TUS NÚMEROS</span>
-                 <strong style="font-size: 24px; color: #102216;">${assignedNumbers.join(' - ')}</strong>
-              </div>
-              
-              <div style="color: #666; font-size: 12px; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px;">
-                <p>Ref: ${userData.ref}</p>
-                <p>Auth Banco: ${bankResult.data ? bankResult.data.authorization_code : 'N/A'}</p>
-              </div>
-           </div>
-        </div>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            .ticket-container { font-family: 'Courier New', Courier, monospace; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #1a1a1a;">
+          <br><br>
+          <div style="max-width: 450px; margin: 0 auto; font-family: Helvetica, Arial, sans-serif;">
+            
+            <!-- TICKET HEADER (El talón) -->
+            <div style="background-color: #102216; padding: 20px; border-radius: 15px 15px 0 0; border-bottom: 3px dashed #13ec5b; position: relative;">
+               <!-- Círculos decorativos para efecto de ticket cortado -->
+               <div style="position: absolute; bottom: -10px; left: -10px; width: 20px; height: 20px; background-color: #1a1a1a; border-radius: 50%;"></div>
+               <div style="position: absolute; bottom: -10px; right: -10px; width: 20px; height: 20px; background-color: #1a1a1a; border-radius: 50%;"></div>
+               
+               <h2 style="color: #fff; margin: 0; text-align: center; text-transform: uppercase; letter-spacing: 2px;">GRAN RIFA</h2>
+               <h1 style="color: #13ec5b; margin: 5px 0; text-align: center; font-size: 28px;">TOYOTA COROLLA</h1>
+               <p style="color: #888; text-align: center; margin: 0; font-size: 12px;">COMPROBANTE OFICIAL DE PARTICIPACIÓN</p>
+            </div>
+
+            <!-- TICKET BODY (Cuerpo Blanco) -->
+            <div style="background-color: #fdfdfd; padding: 30px 25px; border-radius: 0 0 15px 15px; position: relative;">
+               
+               <!-- NÚMEROS (La parte más importante) -->
+               <div style="text-align: center; margin-bottom: 25px;">
+                  <p style="color: #666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">TUS NÚMEROS JUGADORES</p>
+                  
+                  <div style="border: 2px solid #102216; border-radius: 10px; padding: 15px; background-color: #e8f5e9;">
+                      <div style="font-size: 32px; font-weight: 900; color: #102216; letter-spacing: 3px; word-wrap: break-word;">
+                        ${assignedNumbers.join('  •  ')}
+                      </div>
+                  </div>
+               </div>
+
+               <!-- DATOS DE LA TRANSACCIÓN (Tabla limpia) -->
+               <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #333;">
+                  <tr style="border-bottom: 1px solid #eee;">
+                     <td style="padding: 8px 0; color: #888;">Cliente</td>
+                     <td style="padding: 8px 0; text-align: right; font-weight: bold;">${userData.name}</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #eee;">
+                     <td style="padding: 8px 0; color: #888;">Cédula</td>
+                     <td style="padding: 8px 0; text-align: right; font-weight: bold;">${userData.ci}</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #eee;">
+                     <td style="padding: 8px 0; color: #888;">Referencia</td>
+                     <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #102216;">${userData.ref}</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #eee;">
+                     <td style="padding: 8px 0; color: #888;">Fecha Pago</td>
+                     <td style="padding: 8px 0; text-align: right; font-weight: bold;">${new Date().toLocaleDateString('es-VE')}</td>
+                  </tr>
+                  <tr>
+                     <td style="padding: 12px 0 0 0; font-size: 16px; font-weight: bold; color: #102216;">TOTAL PAGADO</td>
+                     <td style="padding: 12px 0 0 0; text-align: right; font-size: 18px; font-weight: 900; color: #13ec5b;">${rawAmount.toFixed(2)} ${CURRENCY}</td>
+                  </tr>
+               </table>
+
+               <!-- CÓDIGO DE BARRAS SIMULADO (Decoración) -->
+               <div style="margin-top: 30px; text-align: center; opacity: 0.7;">
+                  <div style="height: 40px; background: repeating-linear-gradient(90deg, #000, #000 2px, #fff 2px, #fff 4px); width: 80%; margin: 0 auto;"></div>
+                  <p style="font-size: 10px; margin-top: 5px; color: #aaa;">ID: ${newSale.purchaseDate.seconds || Date.now()}</p>
+               </div>
+
+            </div>
+            
+            <p style="text-align: center; color: #555; font-size: 10px; margin-top: 20px;">
+              Este boleto es digital y único. Consérvalo para reclamar tu premio.
+            </p>
+            <br><br>
+          </div>
+        </body>
+        </html>
       `
     };
-
+    
     transporter.sendMail(mailOptions).catch(err => console.error("Error mail:", err));
     res.json({ success: true, numbers: assignedNumbers });
 
