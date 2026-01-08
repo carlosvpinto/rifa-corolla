@@ -76,7 +76,8 @@ function showConfirm(title, message) {
 // ==========================================
 // 3. VARIABLES GLOBALES Y LOGIN
 // ==========================================
-const API_BASE_URL = "http://localhost:3000/api"; 
+//const API_BASE_URL = "http://localhost:3000/api"; 
+const API_BASE_URL = "https://rifa-carros-corolla.onrender.com/api"; 
 window.CURRENT_POOL_SIZE = 100;
 window.CURRENT_PRICE = 5;
 window.CURRENT_CURRENCY = '$';

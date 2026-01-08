@@ -1,8 +1,11 @@
 // ==========================================
 // 1. CONFIGURACIÓN Y VARIABLES
 // ==========================================
-const BACKEND_URL = "http://localhost:3000/api/comprar";
-const CONFIG_URL = "http://localhost:3000/api/config"; 
+//const BACKEND_URL = "http://localhost:3000/api/comprar";
+//const CONFIG_URL = "http://localhost:3000/api/config"; 
+
+const BACKEND_URL = "https://rifa-carros-corolla.onrender.com/api/comprar";
+const CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/config";
 
 // Variables Globales (Valores por defecto)
 let TICKET_PRICE = 5; 
