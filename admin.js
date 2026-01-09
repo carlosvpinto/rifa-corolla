@@ -204,6 +204,8 @@ const ticketsSelect = document.getElementById('total-tickets-select');
 const priceInput = document.getElementById('ticket-price-input');
 const currencySelect = document.getElementById('currency-select');
 const manualSoldInput = document.getElementById('manual-sold-input'); 
+const titleInput = document.getElementById('raffle-title-input');
+const codeInput = document.getElementById('draw-code-input');
 
 async function loadConfig() {
     try {
@@ -215,6 +217,8 @@ async function loadConfig() {
             if(priceInput) priceInput.value = data.ticketPrice;
             if(currencySelect) currencySelect.value = data.currency;
             if(manualSoldInput) manualSoldInput.value = data.manualSold || 0;
+            if(titleInput) titleInput.value = data.raffleTitle || "Rifa Activa";
+            if(codeInput) codeInput.value = data.drawCode || "Sorteo #001";
             
              if (data.images && Array.isArray(data.images)) {
                 existingUrls = data.images;
@@ -236,6 +240,9 @@ window.saveConfig = async () => {
     const newPrice = priceInput.value;
     const newCurrency = currencySelect.value;
     const newManualSold = manualSoldInput.value; 
+     const newTitle = titleInput.value;
+    const newCode = codeInput.value;
+    
 
     if (!await showConfirm("¿Guardar cambios?", `Tickets: ${newTotal} | Precio: ${newPrice} | Moneda: ${newCurrency} | Ticker Vendidos: ${newManualSold}`)) return;
 
@@ -251,6 +258,8 @@ window.saveConfig = async () => {
                 totalTickets: newTotal,
                 ticketPrice: newPrice,
                 currency: newCurrency,
+                  raffleTitle: newTitle, // Enviamos título
+                drawCode: newCode,     // Enviamos código
                 manualSold: newManualSold 
             })
         });
@@ -312,22 +321,70 @@ function renderTable(data) {
     const tableBody = document.getElementById('sales-table-body');
     if(!tableBody) return;
     tableBody.innerHTML = '';
-    if (data.length === 0) { tableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Sin ventas.</td></tr>'; return; }
+
+    if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Sin ventas.</td></tr>';
+        return;
+    }
 
     data.forEach(sale => {
         let dateStr = "N/A";
-        if (sale.dateObj && sale.dateObj.toDate) dateStr = sale.dateObj.toDate().toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
+        if (sale.dateObj && sale.dateObj.toDate) {
+            dateStr = sale.dateObj.toDate().toLocaleDateString('es-VE', { 
+                month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' 
+            });
+        }
         const saleCurrency = sale.currency || window.CURRENT_CURRENCY;
 
         const row = document.createElement('tr');
         row.className = "hover:bg-white/5 transition-colors border-b border-white/5";
+        
         row.innerHTML = `
-            <td class="p-4 text-gray-300 text-xs">${dateStr}</td>
-            <td class="p-4 font-medium text-white">${sale.name}<br><span class="text-xs text-gray-500">${sale.ci}</span></td>
-            <td class="p-4"><span class="font-mono text-primary bg-primary/10 px-2 py-1 rounded text-xs">${sale.ref}</span></td>
-            <td class="p-4 text-gray-400 text-xs">${sale.phone}<br>${sale.email}</td>
-            <td class="p-4"><div class="flex flex-wrap gap-1 max-w-[200px]">${sale.numbers.map(n => `<span class="bg-surface-highlight border border-white/10 px-1.5 rounded text-xs">${n}</span>`).join('')}</div></td>
-            <td class="p-4 text-right font-bold text-green-400">${saleCurrency} ${sale.totalAmount.toFixed(2)}</td>
+            <!-- 1. Fecha (Solo PC) -->
+            <td class="p-3 text-gray-400 text-[10px] hidden sm:table-cell whitespace-nowrap align-top">
+                ${dateStr}
+            </td>
+            
+            <!-- 2. Cliente -->
+            <td class="p-3 align-top">
+                <div class="font-bold text-white text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none">
+                    ${sale.name}
+                </div>
+                <div class="text-[10px] text-primary sm:hidden">
+                    ${sale.ci}
+                </div>
+            </td>
+
+            <!-- 3. Referencia -->
+            <td class="p-3 align-top">
+                <span class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded text-[10px] tracking-wider">
+                    ${sale.ref}
+                </span>
+            </td>
+
+            <!-- 4. Contacto (Solo PC) -->
+            <td class="p-3 text-gray-400 text-xs hidden sm:table-cell align-top">
+                <span class="text-primary font-bold">${sale.ci}</span><br>
+                ${sale.phone}
+            </td>
+
+            <!-- 5. TICKETS (CORREGIDO) -->
+            <!-- Mobile: Ancho fijo + Scroll Horizontal -->
+            <!-- Desktop: Sin ancho fijo + Wrap (Multi-linea) -->
+            <td class="p-3 max-w-[120px] sm:max-w-none align-top">
+                <div class="flex gap-1 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-1">
+                    ${sale.numbers.map(n => `
+                        <span class="bg-surface-highlight border border-white/10 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0">
+                            ${n}
+                        </span>
+                    `).join('')}
+                </div>
+            </td>
+
+            <!-- 6. Monto -->
+            <td class="p-3 text-right font-bold text-green-400 text-xs whitespace-nowrap align-top">
+                ${saleCurrency} ${sale.totalAmount.toFixed(2)}
+            </td>
         `;
         tableBody.appendChild(row);
     });

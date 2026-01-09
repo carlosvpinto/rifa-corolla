@@ -10,9 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
-// 1. CONFIGURACIÓN
-// ==========================================
+// CONFIGURACIÓN
 const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -27,9 +25,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// ==========================================
-// 2. UTILIDADES
-// ==========================================
+// UTILIDADES
 const encryptMercantil = (message, key) => {
     const algorythm = "aes-128-ecb";
     const hash = crypto.createHash('sha256');
@@ -56,9 +52,7 @@ const formatPhone = (phone) => {
     return clean;
 };
 
-// ==========================================
-// 3. LÓGICA DE NEGOCIO
-// ==========================================
+// LÓGICA DE NEGOCIO
 async function checkReferenceExists(ref) {
     if (ref === "1234") return false; 
     const snapshot = await db.collection('ventas')
@@ -115,9 +109,7 @@ async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, p
                 return { success: true, data: transactions[0] };
             }
         }
-        
         return { success: false };
-
     } catch (error) {
         console.error("Error Banco:", error.message);
         return { success: false };
@@ -126,7 +118,15 @@ async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, p
 
 async function getRaffleConfig() {
   const doc = await db.collection('settings').doc('general').get();
-  if (!doc.exists) return { totalTickets: 100, ticketPrice: 5, currency: '$', adminPin: '2026' }; 
+  // Valores por defecto si no existen
+  if (!doc.exists) return { 
+      totalTickets: 100, 
+      ticketPrice: 5, 
+      currency: '$', 
+      adminPin: '2026',
+      raffleTitle: 'Gran Rifa', // Default
+      drawCode: 'Sorteo #001'   // Default
+  }; 
   return doc.data();
 }
 
@@ -142,13 +142,12 @@ async function getAvailableNumbers(totalTickets) {
   return allNumbers.filter(n => !soldList.includes(n));
 }
 
-// ==========================================
-// 4. ENDPOINTS
-// ==========================================
+// ENDPOINTS
 
+// 1. GUARDAR CONFIGURACIÓN (ACTUALIZADO)
 app.post('/api/config', async (req, res) => {
   try {
-    const { totalTickets, ticketPrice, currency, manualSold, images, adminPin } = req.body;
+    const { totalTickets, ticketPrice, currency, manualSold, images, adminPin, raffleTitle, drawCode } = req.body;
     
     const updateData = {};
     if (totalTickets !== undefined) updateData.totalTickets = parseInt(totalTickets);
@@ -157,16 +156,16 @@ app.post('/api/config', async (req, res) => {
     if (manualSold !== undefined) updateData.manualSold = parseInt(manualSold);
     if (images !== undefined) updateData.images = images;
     
-    if (adminPin && adminPin.trim() !== "") {
-        updateData.adminPin = adminPin;
-    }
+    // Guardamos los nuevos campos de texto
+    if (raffleTitle !== undefined) updateData.raffleTitle = raffleTitle;
+    if (drawCode !== undefined) updateData.drawCode = drawCode;
+    
+    if (adminPin && adminPin.trim() !== "") updateData.adminPin = adminPin;
 
-    if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ error: "No se enviaron datos" });
-    }
+    if (Object.keys(updateData).length === 0) return res.status(400).json({ error: "No datos" });
 
     await db.collection('settings').doc('general').set(updateData, { merge: true });
-    res.json({ success: true, message: "Configuración guardada" });
+    res.json({ success: true, message: "Guardado" });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
@@ -182,18 +181,12 @@ app.post('/api/admin/login', async (req, res) => {
         const { pin } = req.body;
         const config = await getRaffleConfig();
         const currentPin = config.adminPin || "2026";
-
-        if (pin === currentPin) {
-            res.json({ success: true });
-        } else {
-            res.status(401).json({ error: "PIN Incorrecto" });
-        }
-    } catch (error) {
-        res.status(500).json({ error: "Error de servidor" });
-    }
+        if (pin === currentPin) res.json({ success: true });
+        else res.status(401).json({ error: "PIN Incorrecto" });
+    } catch (error) { res.status(500).json({ error: "Error servidor" }); }
 });
 
-// COMPRA
+// 2. COMPRA (ACTUALIZADO)
 app.post('/api/comprar', async (req, res) => {
   try {
     const { userData, quantity } = req.body;
@@ -202,14 +195,16 @@ app.post('/api/comprar', async (req, res) => {
     const TOTAL_TICKETS = parseInt(config.totalTickets) || 100;
     const PRICE = parseFloat(config.ticketPrice) || 5;
     const CURRENCY = config.currency || '$';
+    
+    // Obtenemos nombre y sorteo actuales
+    const RAFFLE_TITLE = config.raffleTitle || "Gran Rifa";
+    const DRAW_CODE = config.drawCode || "Sorteo General";
 
     if (!userData || !quantity) return res.status(400).json({ error: 'Faltan datos' });
 
-    // 1. CHEQUEAR DUPLICADO
     const isUsed = await checkReferenceExists(userData.ref);
     if (isUsed) return res.status(409).json({ error: 'Referencia ya utilizada.' });
 
-    // 2. CHEQUEAR BANCO
     const rawAmount = quantity * PRICE;
     const dateToCheck = getVenezuelaDate(userData.paymentDate);
 
@@ -221,11 +216,8 @@ app.post('/api/comprar', async (req, res) => {
         return res.status(402).json({ error: 'Pago no encontrado. Verifica Fecha, Referencia y Monto.' });
     }
 
-    // 3. VENDER
     const available = await getAvailableNumbers(TOTAL_TICKETS);
-    if (available.length < quantity) {
-      return res.status(400).json({ error: `Solo quedan ${available.length} números disponibles.` });
-    }
+    if (available.length < quantity) return res.status(400).json({ error: `Solo quedan ${available.length} tickets.` });
 
     available.sort(() => Math.random() - 0.5);
     const assignedNumbers = available.slice(0, quantity);
@@ -235,6 +227,9 @@ app.post('/api/comprar', async (req, res) => {
       ticketsQty: parseInt(quantity),
       totalAmount: rawAmount,
       currency: CURRENCY,
+      // 🔴 GUARDAMOS EL NOMBRE Y CÓDIGO EN LA VENTA 🔴
+      raffleTitle: RAFFLE_TITLE,
+      drawCode: DRAW_CODE,
       numbers: assignedNumbers,
       purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
       status: 'pagado_verificado',
@@ -243,84 +238,38 @@ app.post('/api/comprar', async (req, res) => {
 
     await db.collection('ventas').add(newSale);
 
-    // 4. ENVIAR CORREO (DISEÑO MEJORADO CON DETALLES)
-    // 4. ENVIAR CORREO (DISEÑO TICKET REALISTA)
+    // Correo Actualizado con el Nombre de la Rifa
     const mailOptions = {
-      from: `Rifa Corolla <${process.env.EMAIL_USER}>`,
+      from: `Rifa <${process.env.EMAIL_USER}>`,
       to: userData.email,
-      subject: `🎫 TU BOLETO DIGITAL - Ref: ${userData.ref}`,
+      subject: `🎫 BOLETO: ${RAFFLE_TITLE}`,
       html: `
         <!DOCTYPE html>
         <html>
-        <head>
-          <style>
-            .ticket-container { font-family: 'Courier New', Courier, monospace; }
-          </style>
-        </head>
         <body style="margin: 0; padding: 0; background-color: #1a1a1a;">
           <br><br>
           <div style="max-width: 450px; margin: 0 auto; font-family: Helvetica, Arial, sans-serif;">
-            
-            <!-- TICKET HEADER (El talón) -->
             <div style="background-color: #102216; padding: 20px; border-radius: 15px 15px 0 0; border-bottom: 3px dashed #13ec5b; position: relative;">
-               <!-- Círculos decorativos para efecto de ticket cortado -->
-               <div style="position: absolute; bottom: -10px; left: -10px; width: 20px; height: 20px; background-color: #1a1a1a; border-radius: 50%;"></div>
-               <div style="position: absolute; bottom: -10px; right: -10px; width: 20px; height: 20px; background-color: #1a1a1a; border-radius: 50%;"></div>
-               
-               <h2 style="color: #fff; margin: 0; text-align: center; text-transform: uppercase; letter-spacing: 2px;">GRAN RIFA</h2>
-               <h1 style="color: #13ec5b; margin: 5px 0; text-align: center; font-size: 28px;">TOYOTA COROLLA</h1>
-               <p style="color: #888; text-align: center; margin: 0; font-size: 12px;">COMPROBANTE OFICIAL DE PARTICIPACIÓN</p>
+               <h2 style="color: #fff; margin: 0; text-align: center; text-transform: uppercase; letter-spacing: 2px;">BOLETO DIGITAL</h2>
+               <!-- NOMBRE DINÁMICO -->
+               <h1 style="color: #13ec5b; margin: 5px 0; text-align: center; font-size: 24px;">${RAFFLE_TITLE}</h1>
+               <p style="color: #888; text-align: center; margin: 0; font-size: 12px;">${DRAW_CODE}</p>
             </div>
-
-            <!-- TICKET BODY (Cuerpo Blanco) -->
             <div style="background-color: #fdfdfd; padding: 30px 25px; border-radius: 0 0 15px 15px; position: relative;">
-               
-               <!-- NÚMEROS (La parte más importante) -->
                <div style="text-align: center; margin-bottom: 25px;">
-                  <p style="color: #666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">TUS NÚMEROS JUGADORES</p>
-                  
+                  <p style="color: #666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">TUS NÚMEROS</p>
                   <div style="border: 2px solid #102216; border-radius: 10px; padding: 15px; background-color: #e8f5e9;">
                       <div style="font-size: 32px; font-weight: 900; color: #102216; letter-spacing: 3px; word-wrap: break-word;">
                         ${assignedNumbers.join('  •  ')}
                       </div>
                   </div>
                </div>
-
-               <!-- DATOS DE LA TRANSACCIÓN (Tabla limpia) -->
                <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #333;">
-                  <tr style="border-bottom: 1px solid #eee;">
-                     <td style="padding: 8px 0; color: #888;">Cliente</td>
-                     <td style="padding: 8px 0; text-align: right; font-weight: bold;">${userData.name}</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid #eee;">
-                     <td style="padding: 8px 0; color: #888;">Cédula</td>
-                     <td style="padding: 8px 0; text-align: right; font-weight: bold;">${userData.ci}</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid #eee;">
-                     <td style="padding: 8px 0; color: #888;">Referencia</td>
-                     <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #102216;">${userData.ref}</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid #eee;">
-                     <td style="padding: 8px 0; color: #888;">Fecha Pago</td>
-                     <td style="padding: 8px 0; text-align: right; font-weight: bold;">${new Date().toLocaleDateString('es-VE')}</td>
-                  </tr>
-                  <tr>
-                     <td style="padding: 12px 0 0 0; font-size: 16px; font-weight: bold; color: #102216;">TOTAL PAGADO</td>
-                     <td style="padding: 12px 0 0 0; text-align: right; font-size: 18px; font-weight: 900; color: #13ec5b;">${rawAmount.toFixed(2)} ${CURRENCY}</td>
-                  </tr>
+                  <tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px 0; color: #888;">Cliente</td><td style="padding: 8px 0; text-align: right; font-weight: bold;">${userData.name}</td></tr>
+                  <tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px 0; color: #888;">Referencia</td><td style="padding: 8px 0; text-align: right; font-weight: bold; color: #102216;">${userData.ref}</td></tr>
+                  <tr><td style="padding: 12px 0 0 0; font-size: 16px; font-weight: bold; color: #102216;">TOTAL</td><td style="padding: 12px 0 0 0; text-align: right; font-size: 18px; font-weight: 900; color: #13ec5b;">${rawAmount.toFixed(2)} ${CURRENCY}</td></tr>
                </table>
-
-               <!-- CÓDIGO DE BARRAS SIMULADO (Decoración) -->
-               <div style="margin-top: 30px; text-align: center; opacity: 0.7;">
-                  <div style="height: 40px; background: repeating-linear-gradient(90deg, #000, #000 2px, #fff 2px, #fff 4px); width: 80%; margin: 0 auto;"></div>
-                  <p style="font-size: 10px; margin-top: 5px; color: #aaa;">ID: ${newSale.purchaseDate.seconds || Date.now()}</p>
-               </div>
-
             </div>
-            
-            <p style="text-align: center; color: #555; font-size: 10px; margin-top: 20px;">
-              Este boleto es digital y único. Consérvalo para reclamar tu premio.
-            </p>
             <br><br>
           </div>
         </body>
@@ -337,12 +286,7 @@ app.post('/api/comprar', async (req, res) => {
   }
 });
 
-// 🔴 RUTA DE PRUEBA (Para que Render sepa que estamos vivos)
-app.get('/', (req, res) => {
-    res.send('API Rifa Corolla Funcionando 🚀');
-});
-
-const PORT = process.env.PORT || 3000; // Usar el puerto que Render asigne
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor Backend corriendo en el puerto ${PORT}`);
 });

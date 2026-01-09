@@ -4,9 +4,8 @@
 //const BACKEND_URL = "http://localhost:3000/api/comprar";
 //const CONFIG_URL = "http://localhost:3000/api/config"; 
 
-const BACKEND_URL = "https://rifa-carros-corolla.onrender.com/api/comprar";
-const CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/config";
-
+ const BACKEND_URL = "https://rifa-carros-corolla.onrender.com/api/comprar";
+ const CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/config";
 // Variables Globales (Valores por defecto)
 let TICKET_PRICE = 5; 
 let CURRENCY = '$';
@@ -35,7 +34,11 @@ const backdrop = document.getElementById('modal-backdrop');
 // ==========================================
 // 3. CARGAR CONFIGURACIÓN DESDE EL SERVIDOR
 // ==========================================
+
 async function loadRaffleConfig() {
+    // Referencia al loader
+    const loader = document.getElementById('app-loader');
+
     try {
         const response = await fetch(CONFIG_URL);
         const data = await response.json();
@@ -50,17 +53,44 @@ async function loadRaffleConfig() {
             const manualSold = parseInt(data.manualSold) || 0;
             updateProgressBar(manualSold, totalTickets);
 
-            // C. Configurar Slider de Imágenes (Storage)
+            // C. Configurar Slider de Imágenes
             if (data.images && Array.isArray(data.images) && data.images.length > 0) {
                 sliderImages = data.images;
-                initSlider(); // Iniciar el carrusel
+                initSlider(); 
             }
 
-            // Actualizar textos
+            // D. Actualizar Textos (Título y Código)
+            const titleText = data.raffleTitle || "Gran Rifa";
+            const codeText = data.drawCode || "Sorteo General";
+
+            // Header
+            const headerTitle = document.getElementById('raffle-title-display');
+            const headerCode = document.getElementById('draw-code-display');
+            if(headerTitle) headerTitle.innerText = titleText;
+            if(headerCode) headerCode.innerText = codeText;
+
+            // Hero
+            const heroTitle = document.getElementById('hero-title-display');
+            const heroCode = document.getElementById('hero-code-display');
+            if(heroTitle) heroTitle.innerText = titleText;
+            if(heroCode) heroCode.innerText = codeText;
+
             updateUI(); 
         }
     } catch (error) {
         console.error("Error cargando configuración:", error);
+        // Opcional: Mostrar un mensaje de error en el sitio si falla
+    } finally {
+        // --- ESTA ES LA MAGIA ---
+        // Se ejecuta SIEMPRE (haya éxito o error) para quitar la pantalla de carga
+        if (loader) {
+            // 1. Hacerlo transparente (Fade out)
+            loader.classList.add('opacity-0');
+            // 2. Quitarlo del HTML después de 0.5s (lo que dura la animación)
+            setTimeout(() => {
+                loader.classList.add('hidden');
+            }, 500);
+        }
     }
 }
 

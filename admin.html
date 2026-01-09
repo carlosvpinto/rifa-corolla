@@ -27,6 +27,16 @@
             },
         }
     </script>
+    <style>
+    /* Ocultar barra de scroll pero permitir deslizar */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>
 </head>
 
 <body class="bg-background-dark font-display text-white antialiased h-screen overflow-hidden flex flex-col">
@@ -137,6 +147,17 @@
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+
+                     <!-- NUEVOS CAMPOS -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-400 mb-1">Nombre de la Rifa</label>
+                            <input type="text" id="raffle-title-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary font-bold" placeholder="Ej: Gran Rifa Toyota Corolla">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Código / Nro. Sorteo</label>
+                            <input type="text" id="draw-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary" placeholder="Ej: Sorteo #2026">
+                        </div>
+
                     <div>
                         <label class="block text-xs text-gray-400 mb-1">Total de Tickets</label>
                         <select id="total-tickets-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary">
@@ -203,14 +224,25 @@
                 </div>
                 <div class="flex-1 overflow-auto">
                     <table class="w-full text-left border-collapse">
-                        <thead class="sticky top-0 bg-surface-dark shadow-sm z-10">
-                            <tr class="text-gray-500 text-[10px] uppercase tracking-wider">
-                                <th class="p-4 font-bold">Fecha</th>
-                                <th class="p-4 font-bold">Cliente</th>
-                                <th class="p-4 font-bold">Referencia</th>
-                                <th class="p-4 font-bold">Contacto</th>
-                                <th class="p-4 font-bold">Números</th>
-                                <th class="p-4 font-bold text-right">Monto</th>
+                 <thead class="sticky top-0 bg-surface-dark shadow-sm z-10">
+                            <tr class="text-gray-500 text-[10px] uppercase tracking-wider bg-black/20">
+                                <!-- Fecha: Visible solo en PC -->
+                                <th class="p-3 font-bold hidden sm:table-cell">Fecha</th>
+                                
+                                <!-- Cliente + CI -->
+                                <th class="p-3 font-bold">Cliente</th>
+                                
+                                <!-- Ref -->
+                                <th class="p-3 font-bold">Ref</th>
+                                
+                                <!-- Contacto (Tlf/Email): Visible solo en PC -->
+                                <th class="p-3 font-bold hidden sm:table-cell">Contacto</th>
+                                
+                                <!-- Números -->
+                                <th class="p-3 font-bold">Tickets</th>
+                                
+                                <!-- Monto -->
+                                <th class="p-3 font-bold text-right">Monto</th>
                             </tr>
                         </thead>
                         <tbody id="sales-table-body" class="text-sm divide-y divide-white/5"></tbody>
