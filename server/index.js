@@ -286,6 +286,11 @@ app.post('/api/comprar', async (req, res) => {
   }
 });
 
+// 🔴 RUTA DE PRUEBA (Vital para Render)
+app.get('/', (req, res) => {
+    res.send('API Rifa Corolla Funcionando y Lista 🚀');
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor Backend corriendo en el puerto ${PORT}`);
