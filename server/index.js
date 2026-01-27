@@ -3,7 +3,8 @@ const cors = require('cors');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-const crypto = require('crypto'); 
+const crypto = require('crypto');
+const QRCode = require('qrcode'); 
 require('dotenv').config();
 
 const app = express();
@@ -52,7 +53,7 @@ const formatPhone = (phone) => {
     return clean;
 };
 
-// LÓGICA DE NEGOCIO
+// LÓGICA NEGOCIO
 async function checkReferenceExists(ref) {
     if (ref === "1234") return false; 
     const snapshot = await db.collection('ventas')
@@ -118,14 +119,10 @@ async function verifyMercantilPayment(userCi, userPhone, refNumber, rawAmount, p
 
 async function getRaffleConfig() {
   const doc = await db.collection('settings').doc('general').get();
-  // Valores por defecto si no existen
   if (!doc.exists) return { 
-      totalTickets: 100, 
-      ticketPrice: 5, 
-      currency: '$', 
-      adminPin: '2026',
-      raffleTitle: 'Gran Rifa', // Default
-      drawCode: 'Sorteo #001'   // Default
+      totalTickets: 100, ticketPrice: 5, currency: '$', adminPin: '2026',
+      raffleTitle: 'Gran Rifa', drawCode: 'Sorteo #001', isClosed: false,
+      verificationMode: 'auto' // Por defecto seguro
   }; 
   return doc.data();
 }
@@ -143,30 +140,59 @@ async function getAvailableNumbers(totalTickets) {
 }
 
 // ENDPOINTS
+app.get('/', (req, res) => {
+    res.send('API Rifa Corolla Funcionando 🚀');
+});
 
-// 1. GUARDAR CONFIGURACIÓN (ACTUALIZADO)
+// A. GUARDAR CONFIGURACIÓN (CORREGIDO Y ROBUSTO)
 app.post('/api/config', async (req, res) => {
   try {
-    const { totalTickets, ticketPrice, currency, manualSold, images, adminPin, raffleTitle, drawCode } = req.body;
+    const { 
+        totalTickets, ticketPrice, currency, manualSold, images, 
+        adminPin, raffleTitle, drawCode, 
+        isClosed, verificationMode // <--- Aseguramos recibir estos
+    } = req.body;
     
+    // DEBUG: Ver qué llega desde el Admin
+    console.log("Recibiendo Config:", req.body);
+
     const updateData = {};
+
+    // Validamos estrictamente (undefined) para que el 0 o false no se ignoren
     if (totalTickets !== undefined) updateData.totalTickets = parseInt(totalTickets);
     if (ticketPrice !== undefined) updateData.ticketPrice = parseFloat(ticketPrice);
     if (currency !== undefined) updateData.currency = currency;
     if (manualSold !== undefined) updateData.manualSold = parseInt(manualSold);
-    if (images !== undefined) updateData.images = images;
     
-    // Guardamos los nuevos campos de texto
+    // AQUÍ ESTABA EL PROBLEMA DE LOS BOOLEANOS
+    // Usamos '!== undefined' para aceptar 'false' como un valor válido
+    if (isClosed !== undefined) updateData.isClosed = isClosed;
+    
+    // AQUÍ ESTABA EL PROBLEMA DEL MODO
+    if (verificationMode !== undefined) updateData.verificationMode = verificationMode;
+
+    if (images !== undefined) updateData.images = images;
     if (raffleTitle !== undefined) updateData.raffleTitle = raffleTitle;
     if (drawCode !== undefined) updateData.drawCode = drawCode;
     
-    if (adminPin && adminPin.trim() !== "") updateData.adminPin = adminPin;
+    if (adminPin && adminPin.trim() !== "") {
+        updateData.adminPin = adminPin;
+    }
 
-    if (Object.keys(updateData).length === 0) return res.status(400).json({ error: "No datos" });
+    if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: "No se enviaron datos para actualizar" });
+    }
 
     await db.collection('settings').doc('general').set(updateData, { merge: true });
-    res.json({ success: true, message: "Guardado" });
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    
+    console.log("Datos Guardados en Firebase:", updateData); // Confirmación en consola
+    
+    res.json({ success: true, message: "Configuración guardada" });
+
+  } catch (error) { 
+      console.error("Error guardando config:", error);
+      res.status(500).json({ error: error.message }); 
+  }
 });
 
 app.get('/api/config', async (req, res) => {
@@ -186,95 +212,168 @@ app.post('/api/admin/login', async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Error servidor" }); }
 });
 
-// 2. COMPRA (ACTUALIZADO)
+// --- COMPRA PRINCIPAL (CON VERIFICACIÓN MANUAL/AUTO) ---
 app.post('/api/comprar', async (req, res) => {
   try {
     const { userData, quantity } = req.body;
 
+    // 1. OBTENER CONFIGURACIÓN
     const config = await getRaffleConfig();
+
+    // Validar si la rifa está cerrada por el admin
+    if (config.isClosed) {
+        return res.status(403).json({ error: "⛔ El sorteo está cerrado. No se aceptan más ventas." });
+    }
+
+    // Variables de configuración
     const TOTAL_TICKETS = parseInt(config.totalTickets) || 100;
     const PRICE = parseFloat(config.ticketPrice) || 5;
     const CURRENCY = config.currency || '$';
-    
-    // Obtenemos nombre y sorteo actuales
     const RAFFLE_TITLE = config.raffleTitle || "Gran Rifa";
     const DRAW_CODE = config.drawCode || "Sorteo General";
+    const VERIFICATION_MODE = config.verificationMode || 'auto'; // 'auto' o 'manual'
 
-    if (!userData || !quantity) return res.status(400).json({ error: 'Faltan datos' });
+    // Validar datos de entrada
+    if (!userData || !quantity) return res.status(400).json({ error: 'Faltan datos del usuario o cantidad' });
 
+    // 2. CHEQUEAR DUPLICADO (Prevención de doble gasto)
+    // Esto se hace siempre, sea manual o automático, para evitar desorden.
     const isUsed = await checkReferenceExists(userData.ref);
-    if (isUsed) return res.status(409).json({ error: 'Referencia ya utilizada.' });
-
-    const rawAmount = quantity * PRICE;
-    const dateToCheck = getVenezuelaDate(userData.paymentDate);
-
-    const bankResult = await verifyMercantilPayment(
-        userData.ci, userData.phone, userData.ref, rawAmount, dateToCheck 
-    );
-
-    if (!bankResult.success) {
-        return res.status(402).json({ error: 'Pago no encontrado. Verifica Fecha, Referencia y Monto.' });
+    if (isUsed) {
+        return res.status(409).json({ error: 'Esta referencia ya fue registrada anteriormente.' });
     }
 
-    const available = await getAvailableNumbers(TOTAL_TICKETS);
-    if (available.length < quantity) return res.status(400).json({ error: `Solo quedan ${available.length} tickets.` });
+    // 3. PREPARAR DATOS DE VERIFICACIÓN
+    const rawAmount = quantity * PRICE;
+    const dateToCheck = getVenezuelaDate(userData.paymentDate);
+    
+    let bankResult = { success: false };
 
+    // 🔴 DECISIÓN: ¿MANUAL O AUTOMÁTICO? 🔴
+    if (VERIFICATION_MODE === 'manual') {
+        console.log(`⚠️ MODO MANUAL: Aprobando referencia ${userData.ref} sin ir al banco.`);
+        // Simulamos una respuesta exitosa del banco
+        bankResult = { 
+            success: true, 
+            data: { 
+                authorization_code: "MANUAL-OK", 
+                payment_reference: userData.ref,
+                trx_type: "validacion_manual",
+                trx_date: dateToCheck
+            } 
+        };
+    } else {
+        console.log(`🔒 MODO AUTO: Consultando API Mercantil para Ref ${userData.ref}...`);
+        // Llamada real al banco
+        bankResult = await verifyMercantilPayment(
+            userData.ci, 
+            userData.phone, 
+            userData.ref, 
+            rawAmount, 
+            dateToCheck 
+        );
+    }
+
+    // Si falló (ya sea porque el banco dijo no, o hubo error en auto)
+    if (!bankResult.success) {
+        return res.status(402).json({ 
+            error: 'Pago no encontrado. Por favor verifica: Fecha, Referencia y Monto exacto.' 
+        });
+    }
+
+    // 4. GESTIÓN DE INVENTARIO (Números)
+    const available = await getAvailableNumbers(TOTAL_TICKETS);
+    if (available.length < quantity) {
+        return res.status(400).json({ error: `Solo quedan ${available.length} tickets disponibles.` });
+    }
+
+    // Asignación aleatoria
     available.sort(() => Math.random() - 0.5);
     const assignedNumbers = available.slice(0, quantity);
 
+    // 5. GUARDAR VENTA EN FIREBASE
     const newSale = {
       ...userData,
       ticketsQty: parseInt(quantity),
       totalAmount: rawAmount,
       currency: CURRENCY,
-      // 🔴 GUARDAMOS EL NOMBRE Y CÓDIGO EN LA VENTA 🔴
       raffleTitle: RAFFLE_TITLE,
       drawCode: DRAW_CODE,
       numbers: assignedNumbers,
       purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
       status: 'pagado_verificado',
+      verificationMethod: VERIFICATION_MODE, // Guardamos cómo se verificó
       bankDetails: bankResult.data || {}
     };
 
-    await db.collection('ventas').add(newSale);
+    const docRef = await db.collection('ventas').add(newSale);
 
-    // Correo Actualizado con el Nombre de la Rifa
+    // 6. GENERAR CÓDIGO QR
+    const qrData = `VALIDO\nSorteo: ${RAFFLE_TITLE}\nTicket ID: ${docRef.id}\nCédula: ${userData.ci}\nNúmeros: ${assignedNumbers.join(', ')}`;
+    const qrImage = await QRCode.toDataURL(qrData, { 
+        color: { dark: '#102216', light: '#ffffff' },
+        width: 150 
+    });
+
+    // 7. ENVIAR CORREO (DISEÑO TICKET + QR ADJUNTO)
     const mailOptions = {
       from: `Rifa <${process.env.EMAIL_USER}>`,
       to: userData.email,
-      subject: `🎫 BOLETO: ${RAFFLE_TITLE}`,
+      subject: `🎫 BOLETO: ${RAFFLE_TITLE} (Ref: ${userData.ref})`,
       html: `
         <!DOCTYPE html>
         <html>
         <body style="margin: 0; padding: 0; background-color: #1a1a1a;">
           <br><br>
           <div style="max-width: 450px; margin: 0 auto; font-family: Helvetica, Arial, sans-serif;">
+            
+            <!-- CABECERA TICKET -->
             <div style="background-color: #102216; padding: 20px; border-radius: 15px 15px 0 0; border-bottom: 3px dashed #13ec5b; position: relative;">
                <h2 style="color: #fff; margin: 0; text-align: center; text-transform: uppercase; letter-spacing: 2px;">BOLETO DIGITAL</h2>
-               <!-- NOMBRE DINÁMICO -->
                <h1 style="color: #13ec5b; margin: 5px 0; text-align: center; font-size: 24px;">${RAFFLE_TITLE}</h1>
                <p style="color: #888; text-align: center; margin: 0; font-size: 12px;">${DRAW_CODE}</p>
             </div>
+
+            <!-- CUERPO TICKET -->
             <div style="background-color: #fdfdfd; padding: 30px 25px; border-radius: 0 0 15px 15px; position: relative;">
+               
+               <!-- NÚMEROS -->
                <div style="text-align: center; margin-bottom: 25px;">
                   <p style="color: #666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">TUS NÚMEROS</p>
                   <div style="border: 2px solid #102216; border-radius: 10px; padding: 15px; background-color: #e8f5e9;">
                       <div style="font-size: 32px; font-weight: 900; color: #102216; letter-spacing: 3px; word-wrap: break-word;">
-                        ${assignedNumbers.join('  •  ')}
+                        ${assignedNumbers.join(' • ')}
                       </div>
                   </div>
                </div>
+
+               <!-- TABLA DE DATOS -->
                <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #333;">
                   <tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px 0; color: #888;">Cliente</td><td style="padding: 8px 0; text-align: right; font-weight: bold;">${userData.name}</td></tr>
+                  <tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px 0; color: #888;">Cédula</td><td style="padding: 8px 0; text-align: right; font-weight: bold;">${userData.ci}</td></tr>
                   <tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px 0; color: #888;">Referencia</td><td style="padding: 8px 0; text-align: right; font-weight: bold; color: #102216;">${userData.ref}</td></tr>
                   <tr><td style="padding: 12px 0 0 0; font-size: 16px; font-weight: bold; color: #102216;">TOTAL</td><td style="padding: 12px 0 0 0; text-align: right; font-size: 18px; font-weight: 900; color: #13ec5b;">${rawAmount.toFixed(2)} ${CURRENCY}</td></tr>
                </table>
+
+               <!-- ZONA QR (CID) -->
+               <div style="margin-top: 30px; text-align: center;">
+                  <img src="cid:qrcode_boleto" alt="QR de Validación" style="border: 4px solid #102216; border-radius: 8px; width: 150px; height: 150px;">
+                  <p style="font-size: 10px; margin-top: 5px; color: #aaa;">Escanea para validar propiedad</p>
+               </div>
+
             </div>
             <br><br>
           </div>
         </body>
         </html>
-      `
+      `,
+      attachments: [
+        {
+            filename: 'qrcode.png',
+            path: qrImage,
+            cid: 'qrcode_boleto' 
+        }
+      ]
     };
 
     transporter.sendMail(mailOptions).catch(err => console.error("Error mail:", err));
@@ -284,11 +383,6 @@ app.post('/api/comprar', async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
-});
-
-// 🔴 RUTA DE PRUEBA (Vital para Render)
-app.get('/', (req, res) => {
-    res.send('API Rifa Corolla Funcionando y Lista 🚀');
 });
 
 const PORT = process.env.PORT || 3000;
