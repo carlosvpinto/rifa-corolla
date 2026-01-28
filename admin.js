@@ -60,7 +60,7 @@ function showConfirm(title, message) {
             modal.classList.add('opacity-0'); card.classList.remove('scale-100'); card.classList.add('scale-95');
             setTimeout(() => { modal.classList.add('hidden'); resolve(result); }, 300);
         };
-        // Clonamos botones para eliminar eventos anteriores
+        
         const btnYes = document.getElementById('btn-confirm');
         const btnNo = document.getElementById('btn-cancel');
         const newYes = btnYes.cloneNode(true);
@@ -76,8 +76,10 @@ function showConfirm(title, message) {
 // ==========================================
 // 3. VARIABLES GLOBALES Y LOGIN
 // ==========================================
-//const API_BASE_URL = "http://localhost:3000/api"; 
-const API_BASE_URL = "https://rifa-carros-corolla.onrender.com/api"; 
+// ⚠️ URL DE PRODUCCIÓN (RENDER)
+//const API_BASE_URL = "https://rifa-carros-corolla.onrender.com/api"; 
+const API_BASE_URL = "http://localhost:3000/api";
+
 window.CURRENT_POOL_SIZE = 100;
 window.CURRENT_PRICE = 5;
 window.CURRENT_CURRENCY = '$';
@@ -90,7 +92,7 @@ const loginForm = document.getElementById('login-form');
 const pinInput = document.getElementById('admin-pin');
 const loginError = document.getElementById('login-error');
 
-// Auto-login si ya existe sesión
+// Auto-login
 if (sessionStorage.getItem('admin_auth') === 'true') showDashboard();
 
 // Login contra el servidor
@@ -173,7 +175,7 @@ window.closeSecurityModal = () => {
     setTimeout(() => modal.classList.add('hidden'), 300);
 };
 
-// Guardar solo el PIN nuevo
+// Guardar nuevo PIN
 window.saveNewPin = async () => {
     const newPin = document.getElementById('new-admin-pin').value;
     if(!newPin || newPin.trim() === "") return showToast("El PIN no puede estar vacío", 'error');
@@ -198,15 +200,39 @@ window.saveNewPin = async () => {
 };
 
 // ==========================================
-// 5. CONFIGURACIÓN GENERAL (VISIBLE EN DASHBOARD)
+// 5. CONFIGURACIÓN GENERAL
 // ==========================================
 const ticketsSelect = document.getElementById('total-tickets-select');
 const priceInput = document.getElementById('ticket-price-input');
 const currencySelect = document.getElementById('currency-select');
 const manualSoldInput = document.getElementById('manual-sold-input'); 
-const titleInput = document.getElementById('raffle-title-input');
+const statusToggle = document.getElementById('raffle-status-toggle');
+const statusLabel = document.getElementById('status-label');
+const titleInput = document.getElementById('raffle-title-input'); 
 const codeInput = document.getElementById('draw-code-input');
+const verificationToggle = document.getElementById('verification-mode-toggle');
+const verificationLabel = document.getElementById('verification-label');
 
+const bankNameInput = document.getElementById('bank-name-input');
+const bankCodeInput = document.getElementById('bank-code-input');
+const paymentPhoneInput = document.getElementById('payment-phone-input');
+const paymentCIInput = document.getElementById('payment-ci-input');
+
+// Eventos visuales switches
+if(statusToggle) {
+    statusToggle.addEventListener('change', () => {
+        statusLabel.innerText = statusToggle.checked ? "ABIERTO" : "CERRADO";
+        statusLabel.className = statusToggle.checked ? "ml-3 text-xs font-bold text-primary tracking-wider" : "ml-3 text-xs font-bold text-gray-400 tracking-wider";
+    });
+}
+if(verificationToggle) {
+    verificationToggle.addEventListener('change', () => {
+        verificationLabel.innerText = verificationToggle.checked ? "AUTOMÁTICO" : "MANUAL";
+        verificationLabel.className = verificationToggle.checked ? "ml-3 text-xs font-bold text-blue-400 tracking-wider" : "ml-3 text-xs font-bold text-orange-400 tracking-wider";
+    });
+}
+
+// Cargar Config
 async function loadConfig() {
     try {
         const response = await fetch(`${API_BASE_URL}/config`);
@@ -217,13 +243,32 @@ async function loadConfig() {
             if(priceInput) priceInput.value = data.ticketPrice;
             if(currencySelect) currencySelect.value = data.currency;
             if(manualSoldInput) manualSoldInput.value = data.manualSold || 0;
-            if(titleInput) titleInput.value = data.raffleTitle || "Rifa Activa";
-            if(codeInput) codeInput.value = data.drawCode || "Sorteo #001";
-            
+            if(titleInput) titleInput.value = data.raffleTitle || "";
+            if(codeInput) codeInput.value = data.drawCode || "";
+
+            // Switch Estado (Invertido: isClosed=true -> checked=false)
+            if(statusToggle) {
+                statusToggle.checked = !data.isClosed; 
+                statusToggle.dispatchEvent(new Event('change'));
+            }
+
+            // Switch Verificación (Manual/Auto)
+            if(verificationToggle) {
+                // Si es manual, checked=false. Si es auto (o null), checked=true
+                verificationToggle.checked = data.verificationMode !== 'manual';
+                verificationToggle.dispatchEvent(new Event('change'));
+            }
+
+            // Imágenes
              if (data.images && Array.isArray(data.images)) {
                 existingUrls = data.images;
                 renderPreviews(); 
             }
+
+            if(bankNameInput) bankNameInput.value = data.bankName || "Mercantil";
+            if(bankCodeInput) bankCodeInput.value = data.bankCode || "0105";
+            if(paymentPhoneInput) paymentPhoneInput.value = data.paymentPhone || "04141234567";
+            if(paymentCIInput) paymentCIInput.value = data.paymentCI || "J-123456789";
 
             window.CURRENT_POOL_SIZE = parseInt(data.totalTickets);
             window.CURRENT_PRICE = parseFloat(data.ticketPrice);
@@ -234,17 +279,27 @@ async function loadConfig() {
     } catch (error) { console.error(error); }
 }
 
-// Guardar configuración general (Precio, Moneda, Cantidad, Progreso)
+// Guardar Config
 window.saveConfig = async () => {
     const newTotal = ticketsSelect.value;
     const newPrice = priceInput.value;
     const newCurrency = currencySelect.value;
     const newManualSold = manualSoldInput.value; 
-     const newTitle = titleInput.value;
+    const isRaffleOpen = statusToggle.checked; 
+    const newTitle = titleInput.value;
     const newCode = codeInput.value;
     
+     // Obtener valores bancarios
+    const bankName = bankNameInput.value;
+    const bankCode = bankCodeInput.value;
+    const payPhone = paymentPhoneInput.value;
+    const payCI = paymentCIInput.value;
 
-    if (!await showConfirm("¿Guardar cambios?", `Tickets: ${newTotal} | Precio: ${newPrice} | Moneda: ${newCurrency} | Ticker Vendidos: ${newManualSold}`)) return;
+    // Verificación Manual/Auto
+    const isAutoVerification = verificationToggle.checked;
+    const modeToSend = isAutoVerification ? 'auto' : 'manual';
+
+    if (!await showConfirm("¿Guardar cambios?", "Se actualizará la configuración de la rifa.")) return;
 
     const btn = document.querySelector('button[onclick="saveConfig()"]');
     const originalText = btn.innerText;
@@ -258,9 +313,16 @@ window.saveConfig = async () => {
                 totalTickets: newTotal,
                 ticketPrice: newPrice,
                 currency: newCurrency,
-                  raffleTitle: newTitle, // Enviamos título
-                drawCode: newCode,     // Enviamos código
-                manualSold: newManualSold 
+                manualSold: newManualSold,
+                isClosed: !isRaffleOpen,
+                raffleTitle: newTitle, 
+                drawCode: newCode,
+                verificationMode: modeToSend, // <--- Enviamos el modo
+                 // 🔴 NUEVOS CAMPOS
+                bankName: bankName,
+                bankCode: bankCode,
+                paymentPhone: payPhone,
+                paymentCI: payCI
             })
         });
 
@@ -276,7 +338,7 @@ window.saveConfig = async () => {
 };
 
 // ==========================================
-// 6. CARGA DE DATOS DE VENTAS
+// 6. CARGA DE DATOS DE VENTAS (TABLA RESPONSIVE)
 // ==========================================
 let allSales = []; 
 
@@ -323,18 +385,47 @@ function renderTable(data) {
     tableBody.innerHTML = '';
 
     if (data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Sin ventas.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Sin ventas registradas.</td></tr>';
         return;
     }
 
     data.forEach(sale => {
+        // 1. Formateo de Fecha
         let dateStr = "N/A";
         if (sale.dateObj && sale.dateObj.toDate) {
             dateStr = sale.dateObj.toDate().toLocaleDateString('es-VE', { 
                 month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' 
             });
         }
+        
+        // 2. Moneda
         const saleCurrency = sale.currency || window.CURRENT_CURRENCY;
+
+        // 3. LÓGICA DE ESTADO (Botón vs Ícono)
+        // Es pendiente SOLO si es 'manual'. Si es 'auto' o 'manual_approved', es verificado.
+        const isPending = sale.verificationMethod === 'manual';
+        
+        let statusIcon;
+
+        if (isPending) {
+            // Botón Naranja para Validar
+            statusIcon = `
+                <button onclick="approveSale('${sale.id}', '${sale.name}')" 
+                        class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 group border border-orange-500/20 ml-auto mt-1"
+                        title="Click para confirmar el pago en el banco">
+                    <span class="material-symbols-outlined text-[16px]">pending_actions</span>
+                    <span class="text-[10px] font-bold uppercase group-hover:underline">Validar</span>
+                </button>
+            `;
+        } else {
+            // Check Verde Estático
+            statusIcon = `
+                <div class="flex items-center justify-end gap-1 text-primary mt-1 opacity-80" title="Pago Verificado">
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Listo</span>
+                    <span class="material-symbols-outlined text-[18px]">verified</span>
+                </div>
+            `;
+        }
 
         const row = document.createElement('tr');
         row.className = "hover:bg-white/5 transition-colors border-b border-white/5";
@@ -345,7 +436,7 @@ function renderTable(data) {
                 ${dateStr}
             </td>
             
-            <!-- 2. Cliente -->
+            <!-- 2. Cliente (Nombre + CI en Móvil) -->
             <td class="p-3 align-top">
                 <div class="font-bold text-white text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none">
                     ${sale.name}
@@ -362,15 +453,13 @@ function renderTable(data) {
                 </span>
             </td>
 
-            <!-- 4. Contacto (Solo PC) -->
+            <!-- 4. Contacto + CI (Solo PC) -->
             <td class="p-3 text-gray-400 text-xs hidden sm:table-cell align-top">
                 <span class="text-primary font-bold">${sale.ci}</span><br>
                 ${sale.phone}
             </td>
 
-            <!-- 5. TICKETS (CORREGIDO) -->
-            <!-- Mobile: Ancho fijo + Scroll Horizontal -->
-            <!-- Desktop: Sin ancho fijo + Wrap (Multi-linea) -->
+            <!-- 5. Tickets (Scroll en Móvil, Wrap en PC) -->
             <td class="p-3 max-w-[120px] sm:max-w-none align-top">
                 <div class="flex gap-1 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-1">
                     ${sale.numbers.map(n => `
@@ -381,9 +470,13 @@ function renderTable(data) {
                 </div>
             </td>
 
-            <!-- 6. Monto -->
-            <td class="p-3 text-right font-bold text-green-400 text-xs whitespace-nowrap align-top">
-                ${saleCurrency} ${sale.totalAmount.toFixed(2)}
+            <!-- 6. Monto + Acción -->
+            <td class="p-3 text-right align-top">
+                <div class="font-bold text-green-400 text-xs sm:text-sm whitespace-nowrap">
+                    ${saleCurrency} ${sale.totalAmount.toFixed(2)}
+                </div>
+                <!-- Aquí insertamos el botón o el ícono -->
+                ${statusIcon}
             </td>
         `;
         tableBody.appendChild(row);
@@ -441,16 +534,21 @@ window.saveImagesToBackend = async () => {
         }
         const finalImageList = [...existingUrls, ...uploadedUrls];
         
-        // Obtener valores actuales para no borrarlos al guardar imágenes
+        // Mantener configuración actual al guardar fotos
         const tickets = document.getElementById('total-tickets-select').value;
         const price = document.getElementById('ticket-price-input').value;
         const currency = document.getElementById('currency-select').value;
         const manualSold = document.getElementById('manual-sold-input').value;
+        const isClosed = !document.getElementById('raffle-status-toggle').checked;
+        const newTitle = titleInput.value;
+        const newCode = codeInput.value;
+        const isAuto = verificationToggle.checked;
 
         const response = await fetch(`${API_BASE_URL}/config`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                totalTickets: tickets, ticketPrice: price, currency: currency, manualSold: manualSold,
+                totalTickets: tickets, ticketPrice: price, currency: currency, manualSold: manualSold, isClosed: isClosed,
+                raffleTitle: newTitle, drawCode: newCode, verificationMode: isAuto ? 'auto' : 'manual',
                 images: finalImageList 
             })
         });
@@ -459,6 +557,37 @@ window.saveImagesToBackend = async () => {
         else { showToast("Error al guardar", 'error'); }
     } catch (e) { showToast("Error: " + e.message, 'error'); }
     finally { btn.innerText = originalText; btn.disabled = false; }
+};
+
+// APROBAR VENTA MANUALMENTE
+window.approveSale = async (saleId, clientName) => {
+    // 1. Confirmar Acción
+    if (!await showConfirm("¿Aprobar Pago?", `Confirmar pago de ${clientName}.\nSe enviará el correo de validación.`)) return;
+
+    // Feedback visual inmediato (buscamos el botón y lo ponemos cargando)
+    // (Opcional, pero se ve bien)
+    
+    showToast("Procesando aprobación...", 'success');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ saleId: saleId })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showToast(`✅ Pago de ${clientName} aprobado`);
+            loadData(); // Recargar tabla para ver el check verde
+        } else {
+            showToast(result.error || "Error al aprobar", 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast("Error de conexión", 'error');
+    }
 };
 
 // ==========================================

@@ -27,7 +27,11 @@
             },
         }
     </script>
-   
+    <style>
+        /* Estilo para ocultar la barra de scroll pero permitir deslizar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 
 <body class="bg-background-dark font-display text-white antialiased h-screen overflow-hidden flex flex-col">
@@ -47,7 +51,7 @@
         </div>
     </div>
 
-    <!-- 2. HEADER (CON MENÚ DE SEGURIDAD) -->
+    <!-- 2. HEADER -->
     <header class="h-16 border-b border-white/10 bg-surface-dark/80 backdrop-blur-md flex items-center justify-between px-6 z-40">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
@@ -77,9 +81,8 @@
                     <div class="px-4 py-2 border-b border-white/5">
                         <p class="text-xs text-gray-500 uppercase">Seguridad</p>
                     </div>
-                    <!-- SOLO EL PIN AQUÍ -->
                     <button onclick="openSecurityModal()" class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2">
-                        <span class="material-symbols-outlined text-lg text-red-400">lock_reset</span> Cambiar PIN de Acceso
+                        <span class="material-symbols-outlined text-lg text-red-400">lock_reset</span> Cambiar PIN
                     </button>
                     <div class="border-t border-white/5 my-1"></div>
                     <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-red-500/10 hover:text-red-400 flex items-center gap-2">
@@ -89,6 +92,243 @@
             </div>
         </div>
     </header>
+
+    <!-- 3. CONTENIDO PRINCIPAL -->
+    <div id="dashboard" class="flex-1 overflow-hidden hidden opacity-0 transition-opacity duration-500 flex flex-col">
+        <main class="flex-1 overflow-auto p-6 max-w-7xl mx-auto w-full">
+            
+            <!-- TARJETAS DE ESTADÍSTICAS -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-surface-dark p-5 rounded-2xl border border-white/5">
+                    <p class="text-gray-400 text-xs font-bold uppercase">Disponibles</p>
+                    <div class="flex items-end justify-between mt-2">
+                        <h3 class="text-3xl font-bold text-white"><span id="stat-available">--</span></h3>
+                        <span class="material-symbols-outlined text-primary/20 text-4xl">confirmation_number</span>
+                    </div>
+                </div>
+                <div class="bg-surface-dark p-5 rounded-2xl border border-white/5">
+                    <p class="text-gray-400 text-xs font-bold uppercase">Ingresos</p>
+                    <div class="flex items-end justify-between mt-2">
+                        <h3 class="text-3xl font-bold text-green-400"><span id="stat-money">--</span></h3>
+                        <span class="material-symbols-outlined text-green-500/20 text-4xl">payments</span>
+                    </div>
+                </div>
+                <div class="bg-surface-dark p-5 rounded-2xl border border-white/5">
+                    <p class="text-gray-400 text-xs font-bold uppercase">Vendidos</p>
+                    <div class="flex items-end justify-between mt-2">
+                        <h3 class="text-3xl font-bold text-white"><span id="stat-tickets">--</span></h3>
+                        <span class="material-symbols-outlined text-blue-500/20 text-4xl">shopping_cart</span>
+                    </div>
+                </div>
+                <div class="bg-surface-dark p-5 rounded-2xl border border-white/5">
+                    <p class="text-gray-400 text-xs font-bold uppercase">Clientes</p>
+                    <div class="flex items-end justify-between mt-2">
+                        <h3 class="text-3xl font-bold text-blue-400"><span id="stat-clients">--</span></h3>
+                        <span class="material-symbols-outlined text-purple-500/20 text-4xl">group</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 1: CONFIGURACIÓN GENERAL Y BANCARIA -->
+            <div class="mb-6 bg-surface-dark p-6 rounded-2xl border border-primary/20 shadow-lg">
+                
+                <div class="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                    <div class="p-2 bg-primary/10 rounded-lg text-primary">
+                        <span class="material-symbols-outlined text-2xl">tune</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-bold text-lg">Configuración General</h3>
+                        <p class="text-xs text-gray-400">Controla los parámetros, estado y datos bancarios.</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
+                    
+                    <!-- ESTADO -->
+                    <div class="md:col-span-2 bg-black/20 p-4 rounded-xl border border-white/5 flex items-center justify-between mb-2">
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Estado de Ventas</h5>
+                            <p class="text-gray-400 text-xs mt-0.5">Interruptor maestro.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="raffle-status-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            <span class="ml-3 text-xs font-bold text-gray-300 uppercase tracking-wider" id="status-label">CERRADO</span>
+                        </label>
+                    </div>
+
+                    <!-- VALIDACIÓN -->
+                    <div class="md:col-span-2 bg-blue-900/20 p-4 rounded-xl border border-blue-500/30 flex items-center justify-between mb-2">
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Validación Bancaria</h5>
+                            <p class="text-gray-400 text-xs mt-0.5">Automático (Banco) vs Manual.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="verification-mode-toggle" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            <span class="ml-3 text-xs font-bold text-gray-300 uppercase tracking-wider" id="verification-label">AUTOMÁTICO</span>
+                        </label>
+                    </div>
+
+                    <!-- NOMBRE Y CÓDIGO -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Nombre de la Rifa</label>
+                        <input type="text" id="raffle-title-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: Gran Rifa Toyota">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Código / Sorteo</label>
+                        <input type="text" id="draw-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: Sorteo #2026">
+                    </div>
+
+                    <!-- NÚMEROS -->
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Total Tickets</label>
+                        <select id="total-tickets-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary cursor-pointer">
+                            <option value="100">100</option>
+                            <option value="1000">1.000</option>
+                            <option value="10000">10.000</option>
+                            <option value="100000">100.000</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Progreso Visual</label>
+                        <input type="number" id="manual-sold-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Precio</label>
+                        <input type="number" id="ticket-price-input" step="0.01" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Moneda</label>
+                        <select id="currency-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary cursor-pointer">
+                            <option value="$">Dólares ($)</option>
+                            <option value="Bs.">Bolívares (Bs.)</option>
+                            <option value="€">Euros (€)</option>
+                        </select>
+                    </div>
+
+                    <!-- DATOS BANCARIOS -->
+                    <div class="md:col-span-4 mt-4 pt-4 border-t border-white/10">
+                        <h4 class="text-xs text-green-400 font-bold uppercase tracking-widest mb-3">Datos de Recepción (Pago Móvil)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Banco</label>
+                                <input type="text" id="bank-name-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: Mercantil">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Código</label>
+                                <input type="text" id="bank-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: 0105">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Teléfono</label>
+                                <input type="text" id="payment-phone-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: 04141234567">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Cédula/RIF</label>
+                                <input type="text" id="payment-ci-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: J-123456789">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOTÓN GUARDAR -->
+                    <div class="md:col-span-4 mt-2">
+                        <button onclick="saveConfig()" class="w-full bg-primary hover:bg-green-400 text-background-dark font-extrabold rounded-xl text-sm px-5 py-3 transition-all transform active:scale-95 shadow-[0_0_15px_rgba(19,236,91,0.2)]">
+                            GUARDAR CONFIGURACIÓN
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 2: IMÁGENES -->
+            <div class="mb-6 bg-surface-dark p-6 rounded-2xl border border-white/5">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-outlined text-primary text-2xl">imagesmode</span>
+                    <h3 class="text-white font-bold text-lg">Galería del Premio</h3>
+                </div>
+
+                <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-white/10 border-dashed rounded-lg cursor-pointer hover:bg-white/5 transition-colors mb-4">
+                    <div class="flex flex-col items-center justify-center">
+                        <span class="material-symbols-outlined text-gray-400">cloud_upload</span>
+                        <p class="text-xs text-gray-400 mt-1">Click para agregar fotos</p>
+                    </div>
+                    <input id="image-upload" type="file" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)" />
+                </label>
+
+                <div id="image-preview-container" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+                
+                <button onclick="saveImagesToBackend()" class="w-full mt-4 border border-primary text-primary hover:bg-primary hover:text-background-dark font-bold rounded-lg text-sm px-5 py-2.5 transition-colors">
+                    Actualizar Galería
+                </button>
+            </div>
+
+            <!-- SECCIÓN 3: TABLA DE TRANSACCIONES -->
+            <div class="bg-surface-dark rounded-2xl border border-white/5 flex flex-col h-[500px]">
+                <div class="p-4 border-b border-white/5 flex justify-between items-center bg-black/20">
+                    <h3 class="font-bold text-sm text-gray-200">Transacciones</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="search-input" placeholder="Buscar..." class="bg-black/30 border border-white/10 rounded-lg py-1.5 px-3 text-sm text-white focus:ring-1 focus:ring-primary outline-none w-40 sm:w-64">
+                        <button onclick="exportToCSV()" class="bg-white/5 hover:bg-white/10 p-1.5 rounded-lg text-gray-300" title="Exportar">
+                            <span class="material-symbols-outlined text-lg">download</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-surface-dark shadow-sm z-10">
+                            <tr class="text-gray-500 text-[10px] uppercase tracking-wider bg-black/20">
+                                <th class="p-3 font-bold hidden sm:table-cell">Fecha</th>
+                                <th class="p-3 font-bold">Cliente</th>
+                                <th class="p-3 font-bold">Ref</th>
+                                <th class="p-3 font-bold hidden sm:table-cell">Contacto</th>
+                                <th class="p-3 font-bold">Tickets</th>
+                                <th class="p-3 font-bold text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table-body" class="text-sm divide-y divide-white/5"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL SEGURIDAD (PIN) -->
+    <div id="security-modal" class="fixed inset-0 z-[90] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeSecurityModal()"></div>
+        <div class="relative w-full max-w-sm bg-surface-dark rounded-2xl p-6 shadow-2xl ring-1 ring-red-500/30 transform scale-95 transition-transform duration-300">
+            <div class="flex items-center gap-3 mb-4 text-red-400">
+                <span class="material-symbols-outlined text-2xl">lock</span>
+                <h3 class="text-lg font-bold text-white">Seguridad</h3>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Ingresa el nuevo PIN para acceder al panel.</p>
+            <input type="text" id="new-admin-pin" class="w-full bg-black/30 border border-red-500/30 text-center text-2xl tracking-[0.2em] rounded-lg p-3 text-white focus:ring-1 focus:ring-red-500 outline-none mb-6" placeholder="NUEVO PIN" maxlength="10">
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeSecurityModal()" class="py-2.5 rounded-lg border border-white/10 hover:bg-white/5 text-gray-300 font-medium">Cancelar</button>
+                <button onclick="saveNewPin()" class="py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold">Guardar PIN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPONENTES DE UI (TOAST Y CONFIRM) -->
+    <div id="admin-toast" class="fixed top-5 right-5 z-[100] flex items-center gap-3 bg-surface-highlight border-l-4 border-primary px-4 py-3 rounded shadow-2xl transform transition-all duration-300 translate-x-full opacity-0 pointer-events-none">
+        <span id="toast-icon" class="material-symbols-outlined text-primary">check_circle</span>
+        <div><h4 id="toast-title" class="text-sm font-bold text-white">Notificación</h4><p id="toast-message" class="text-xs text-gray-300">Mensaje</p></div>
+    </div>
+
+    <div id="confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-sm bg-surface-dark rounded-2xl p-6 shadow-2xl ring-1 ring-white/10 transform scale-95 transition-transform duration-300" id="confirm-card">
+            <h3 id="confirm-title" class="text-xl font-bold text-white mb-2 text-center">¿Seguro?</h3>
+            <p id="confirm-desc" class="text-sm text-gray-400 text-center mb-6">Confirmar acción.</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="btn-cancel" class="py-2 rounded-lg border border-white/10 hover:bg-white/5">Cancelar</button>
+                <button id="btn-confirm" class="py-2 rounded-lg bg-primary text-background-dark font-bold">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
 
     <!-- 3. CONTENIDO PRINCIPAL (CONFIGURACIÓN VISIBLE) -->
     <div id="dashboard" class="flex-1 overflow-hidden hidden opacity-0 transition-opacity duration-500 flex flex-col">
@@ -131,52 +371,111 @@
             </div>
 
             <!-- SECCIÓN 1: CONFIGURACIÓN GLOBAL (VISIBLE) -->
-            <div class="mb-6 bg-surface-dark p-6 rounded-2xl border border-primary/20">
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="material-symbols-outlined text-primary text-2xl">tune</span>
-                    <h3 class="text-white font-bold text-lg">Configuración de Rifa</h3>
+            <div class="mb-6 bg-surface-dark p-6 rounded-2xl border border-primary/20 shadow-lg">
+                
+                <div class="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                    <div class="p-2 bg-primary/10 rounded-lg text-primary">
+                        <span class="material-symbols-outlined text-2xl">tune</span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-bold text-lg">Configuración General</h3>
+                        <p class="text-xs text-gray-400">Controla los parámetros y el estado del sorteo.</p>
+                    </div>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-
-                     <!-- NUEVOS CAMPOS -->
-                        <div class="md:col-span-2">
-                            <label class="block text-xs text-gray-400 mb-1">Nombre de la Rifa</label>
-                            <input type="text" id="raffle-title-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary font-bold" placeholder="Ej: Gran Rifa Toyota Corolla">
-                        </div>
+                <!-- GRILLA RESPONSIVA: 1 col en móvil, 2 en tablet, 4 en PC -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
+                    
+                    <!-- 1. ESTADO (Ocupa 2 columnas en PC) -->
+                    <div class="md:col-span-2 lg:col-span-4 bg-black/20 p-4 rounded-xl border border-white/5 flex items-center justify-between mb-2">
                         <div>
-                            <label class="block text-xs text-gray-400 mb-1">Código / Nro. Sorteo</label>
-                            <input type="text" id="draw-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary" placeholder="Ej: Sorteo #2026">
+                            <h5 class="text-white font-bold text-sm">Estado de Ventas</h5>
+                            <p class="text-gray-400 text-xs mt-0.5">Interruptor maestro para detener compras.</p>
                         </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="raffle-status-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            <span class="ml-3 text-xs font-bold text-gray-300 uppercase tracking-wider" id="status-label">CERRADO</span>
+                        </label>
+                    </div>
 
+                    <!-- 1. ESTADO DE VENTAS -->
+                    <div class="md:col-span-2 lg:col-span-4 bg-black/20 p-4 rounded-xl border border-white/5 flex items-center justify-between mb-2">
+                        <!-- ... (Tu código existente del estado Abierto/Cerrado) ... -->
+                    </div>
+
+                    <!-- 2. MODO DE VERIFICACIÓN (NUEVO) -->
+                    <div class="md:col-span-2 lg:col-span-4 bg-blue-900/20 p-4 rounded-xl border border-blue-500/30 flex items-center justify-between mb-4">
+                        <div>
+                            <h5 class="text-white font-bold text-sm">Validación Bancaria</h5>
+                            <p class="text-gray-400 text-xs mt-0.5">Automático: Revisa con el Banco. Manual: Aprueba todo (Contingencia).</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="verification-mode-toggle" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            <span class="ml-3 text-xs font-bold text-gray-300 uppercase tracking-wider" id="verification-label">AUTOMÁTICO</span>
+                        </label>
+                    </div>
+
+                    <!-- 2. NOMBRE (Ocupa 2 columnas en PC) -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Nombre de la Rifa</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-500 text-lg">edit</span>
+                            <input type="text" id="raffle-title-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg pl-10 p-2.5 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder-gray-600" placeholder="Ej: Gran Rifa Toyota">
+                        </div>
+                    </div>
+
+                    <!-- 3. CÓDIGO (Ocupa 2 columnas en PC) -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Código / Sorteo</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-500 text-lg">tag</span>
+                            <input type="text" id="draw-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg pl-10 p-2.5 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder-gray-600" placeholder="Ej: Sorteo #2026">
+                        </div>
+                    </div>
+
+                    <!-- FILA DE NÚMEROS (4 columnas en una sola fila en PC) -->
+                    
+                    <!-- 4. Total Tickets -->
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Total de Tickets</label>
-                        <select id="total-tickets-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Total Tickets</label>
+                        <select id="total-tickets-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer">
                             <option value="100">100</option>
                             <option value="1000">1.000</option>
                             <option value="10000">10.000</option>
                             <option value="100000">100.000</option>
                         </select>
                     </div>
+
+                    <!-- 5. Progreso Manual -->
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Progreso Manual</label>
-                        <input type="number" id="manual-sold-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Progreso Visual</label>
+                        <input type="number" id="manual-sold-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-primary focus:border-primary" placeholder="0">
                     </div>
+
+                    <!-- 6. Precio -->
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Precio</label>
-                        <input type="number" id="ticket-price-input" step="0.01" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Precio</label>
+                        <input type="number" id="ticket-price-input" step="0.01" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-primary focus:border-primary" placeholder="0.00">
                     </div>
+
+                    <!-- 7. Moneda -->
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Moneda</label>
-                        <select id="currency-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Moneda</label>
+                        <select id="currency-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer">
                             <option value="$">Dólares ($)</option>
                             <option value="Bs.">Bolívares (Bs.)</option>
                             <option value="€">Euros (€)</option>
                         </select>
                     </div>
-                    <button onclick="saveConfig()" class="w-full md:col-span-4 bg-primary hover:bg-green-400 text-background-dark font-bold rounded-lg text-sm px-5 py-2.5 transition-colors mt-2">
-                        Guardar Configuración
-                    </button>
+
+                    <!-- 8. BOTÓN GUARDAR (Ancho completo) -->
+                    <div class="md:col-span-2 lg:col-span-4 mt-2">
+                        <button onclick="saveConfig()" class="w-full bg-primary hover:bg-green-400 text-background-dark font-extrabold rounded-xl text-sm px-5 py-3 transition-all transform active:scale-95 shadow-[0_0_15px_rgba(19,236,91,0.2)]">
+                            GUARDAR CONFIGURACIÓN
+                        </button>
+                    </div>
                 </div>
             </div>
 
