@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personalizar Marca - Rifa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b", // Se actualizará dinámicamente con JS
+                        "background-dark": "#102216",
+                        "surface-dark": "#1c271f"
+                    },
+                    fontFamily: { "display": ["Plus Jakarta Sans", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-dark font-display text-white h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 border-b border-white/10 bg-surface-dark px-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="admin.html" class="p-2 hover:bg-white/10 rounded-full text-gray-400 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </a>
+            <h1 class="font-bold text-lg">Personalización de Marca</h1>
+        </div>
+       <div class="flex gap-3">
+            <button onclick="resetBranding()" class="border border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold px-4 py-2 rounded-lg transition-all text-sm">
+                Restablecer
+            </button>
+            <button onclick="saveBranding()" class="bg-primary text-background-dark font-bold px-6 py-2 rounded-lg hover:brightness-110 transition-all">
+                Guardar Cambios
+            </button>
+        </div>
+    </header>
+
+   <!-- ... (Header igual) ... -->
+    <main class="flex-1 overflow-auto p-6 max-w-4xl mx-auto w-full space-y-8">
+
+        <!-- 1. Identidad -->
+        <section class="bg-surface-dark p-6 rounded-2xl border border-white/5">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">badge</span> Identidad
+            </h3>
+            <!-- SOLO NOMBRE -->
+            <div>
+                <label class="block text-sm text-gray-400 mb-2">Nombre de la Empresa / Rifa</label>
+                <input type="text" id="company-name" class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Ej: Sorteos Venezuela">
+            </div>
+        </section>
+
+        <!-- 2. Logo e Icono -->
+        <section class="grid md:grid-cols-2 gap-6">
+            <!-- Logo -->
+            <div class="bg-surface-dark p-6 rounded-2xl border border-white/5">
+                <h3 class="text-lg font-bold mb-4">Logo Principal</h3>
+                <div class="flex flex-col items-center gap-4">
+                    <img id="preview-logo" src="" class="h-20 object-contain border border-white/10 rounded-lg bg-black/20 w-full p-2" alt="Sin Logo">
+                    <label class="cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg text-sm transition-colors w-full text-center">
+                        Subir Logo (PNG/JPG)
+                        <input type="file" id="upload-logo" accept="image/*" class="hidden" onchange="previewImage(event, 'preview-logo')">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Favicon -->
+            <div class="bg-surface-dark p-6 rounded-2xl border border-white/5">
+                <h3 class="text-lg font-bold mb-4">Icono de Pestaña (Favicon)</h3>
+                <div class="flex flex-col items-center gap-4">
+                    <img id="preview-icon" src="" class="h-20 w-20 object-contain border border-white/10 rounded-lg bg-black/20 p-2" alt="Sin Icono">
+                    <label class="cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg text-sm transition-colors w-full text-center">
+                        Subir Icono (Cuadrado)
+                        <input type="file" id="upload-icon" accept="image/*" class="hidden" onchange="previewImage(event, 'preview-icon')">
+                    </label>
+                </div>
+            </div>
+        </section>
+
+    </main>
+<!-- ... (Scripts igual) ... -->
+
+    <!-- Scripts (Reutilizamos la lógica de Firebase de admin.js, pero en un archivo nuevo) -->
+    <script type="module" src="branding.js"></script>
+</body>
+</html>

@@ -57,16 +57,21 @@
         
         <!-- Header -->
         <header class="sticky top-0 z-20 flex items-center justify-between bg-background-dark/95 backdrop-blur-md p-4 pb-2 border-b border-white/5">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-surface-highlight text-primary">
+           <div class="flex items-center gap-3">
+                <!-- LOGO DINÁMICO -->
+                <!-- Por defecto mostramos el icono, JS lo ocultará si hay logo -->
+                <div id="default-logo-icon" class="flex items-center justify-center w-10 h-10 rounded-full bg-surface-highlight text-primary">
                     <span class="material-symbols-outlined">local_activity</span>
                 </div>
+                
+                <!-- Imagen del Logo (Oculta por defecto) -->
+                <!-- Agrega la clase 'hidden' para que no se vea roto al inicio -->
+                <img id="custom-logo-img" src="" alt="Logo" class="h-10 w-auto object-contain hidden">
+
                 <div>
-                    <!-- ID AGREGADO: raffle-title-display -->
+                    <!-- ID para el Título de la Empresa -->
                     <h2 id="raffle-title-display" class="text-white text-xl font-bold leading-tight tracking-tight">Rifa Activa</h2>
-                    
-                    <!-- ID AGREGADO: draw-code-display -->
-                    <p id="draw-code-display" class="text-gray-400 text-xs font-medium">Cargando...</p>
+                    <!-- ... -->
                 </div>
             </div>
         </header>

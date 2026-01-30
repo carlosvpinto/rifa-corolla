@@ -68,6 +68,11 @@
                 <span id="refresh-icon" class="material-symbols-outlined text-[20px]">refresh</span>
             </button>
 
+            <!-- Botón Sorteo -->
+            <button onclick="openWinnerModal()" class="p-2 text-yellow-400 hover:text-yellow-200 transition-colors rounded-full hover:bg-white/5" title="Realizar Sorteo">
+                <span class="material-symbols-outlined text-[24px]">emoji_events</span>
+            </button>
+
             <!-- MENÚ DESPLEGABLE -->
             <div class="relative">
                 <button id="menu-btn" onclick="toggleMenu()" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition-all group">
@@ -77,15 +82,31 @@
                 </button>
 
                 <!-- Dropdown -->
+          <!-- Dropdown -->
                 <div id="dropdown-menu" class="absolute right-0 mt-2 w-56 bg-surface-dark border border-white/10 rounded-xl shadow-2xl py-1 hidden opacity-0 transform scale-95 transition-all origin-top-right z-50">
+                    
+                    <!-- SECCIÓN 1: APARIENCIA (NUEVO) -->
                     <div class="px-4 py-2 border-b border-white/5">
+                        <p class="text-xs text-gray-500 uppercase">Personalización</p>
+                    </div>
+                    
+                    <!-- ENLACE A BRANDING.HTML -->
+                    <a href="branding.html" class="w-full text-left px-4 py-3 text-sm text-yellow-400 hover:bg-white/5 hover:text-white flex items-center gap-2 transition-colors">
+                        <span class="material-symbols-outlined text-lg">palette</span> Editar Marca
+                    </a>
+
+                    <!-- SECCIÓN 2: SEGURIDAD -->
+                    <div class="px-4 py-2 border-t border-b border-white/5 bg-black/20">
                         <p class="text-xs text-gray-500 uppercase">Seguridad</p>
                     </div>
-                    <button onclick="openSecurityModal()" class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2">
+                    <button onclick="openSecurityModal()" class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2 transition-colors">
                         <span class="material-symbols-outlined text-lg text-red-400">lock_reset</span> Cambiar PIN
                     </button>
+                    
                     <div class="border-t border-white/5 my-1"></div>
-                    <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-red-500/10 hover:text-red-400 flex items-center gap-2">
+                    
+                    <!-- SALIR -->
+                    <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-red-500/10 hover:text-red-400 flex items-center gap-2 transition-colors">
                         <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
                     </button>
                 </div>
@@ -572,6 +593,83 @@
             <h3 id="confirm-title" class="text-xl font-bold text-white mb-2 text-center">¿Seguro?</h3>
             <p id="confirm-desc" class="text-sm text-gray-400 text-center mb-6">Confirmar acción.</p>
             <div class="grid grid-cols-2 gap-3"><button id="btn-cancel" class="py-2 rounded-lg border border-white/10 hover:bg-white/5">Cancelar</button><button id="btn-confirm" class="py-2 rounded-lg bg-primary text-background-dark font-bold">Confirmar</button></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE PREMIACIÓN (SORTEO) -->
+    <div id="winner-modal" class="fixed inset-0 z-[90] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeWinnerModal()"></div>
+        
+        <div class="relative w-full max-w-md bg-surface-dark rounded-2xl border border-yellow-500/30 shadow-2xl shadow-yellow-500/10 flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden">
+            
+            <!-- Header Dorado -->
+            <div class="bg-gradient-to-r from-yellow-900/40 to-yellow-600/20 p-6 text-center border-b border-yellow-500/20">
+                <span class="material-symbols-outlined text-5xl text-yellow-400 mb-2 animate-bounce">emoji_events</span>
+                <h2 class="text-2xl font-bold text-white tracking-widest uppercase">Elegir Ganador</h2>
+                <p class="text-xs text-yellow-200/70">Selecciona el método del sorteo</p>
+            </div>
+
+            <div class="p-6 space-y-6">
+                
+                <!-- Opción 1: Manual -->
+                <div>
+                    <label class="block text-xs text-gray-400 mb-2 uppercase font-bold">A. Buscar Número Específico</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="manual-winner-input" class="flex-1 bg-black/30 border border-white/20 rounded-lg p-3 text-white focus:ring-1 focus:ring-yellow-500 outline-none font-mono text-lg text-center" placeholder="Ej: 482">
+                        <button onclick="findWinner('manual')" class="bg-white/10 hover:bg-white/20 text-white px-4 rounded-lg font-bold transition-colors border border-white/10">
+                            <span class="material-symbols-outlined">search</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="h-px bg-white/10 flex-1"></div>
+                    <span class="text-xs text-gray-500 font-bold">O</span>
+                    <div class="h-px bg-white/10 flex-1"></div>
+                </div>
+
+                <!-- Opción 2: Aleatorio -->
+                <button onclick="findWinner('random')" class="w-full py-4 rounded-xl bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-extrabold text-lg shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">casino</span>
+                    SORTEO ALEATORIO
+                </button>
+
+                <!-- RESULTADO (Oculto al inicio) -->
+                <div id="winner-result" class="hidden mt-4 bg-black/40 rounded-xl p-4 border border-yellow-500/30 text-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-yellow-500/5 animate-pulse"></div>
+                    
+                    <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">El número ganador es</p>
+                    <h1 id="res-number" class="text-5xl font-black text-yellow-400 mb-4 drop-shadow-md">--</h1>
+                    
+                    <!-- Datos del Ganador -->
+                <!-- Datos del Ganador -->
+                    <div id="res-found" class="hidden animate-fade-in">
+                        
+                        <!-- ESTADO DEL TICKET (NUEVO) -->
+                        <div id="res-status-badge" class="mb-3 inline-block px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border">
+                            <!-- JS pondrá aquí el texto y color -->
+                        </div>
+
+                        <p class="text-xl text-white font-bold" id="res-name">Nombre Cliente</p>
+                        <p class="text-sm text-gray-400 font-mono" id="res-ci">V-...</p>
+                        <p class="text-sm text-gray-400 font-mono mb-3" id="res-phone">0414-...</p>
+                        
+                        <div class="inline-block px-3 py-1 rounded-full bg-white/5 text-gray-300 text-[10px] font-bold border border-white/10">
+                            TICKET VENDIDO
+                        </div>
+                    </div>
+
+                    <!-- Mensaje No Encontrado -->
+                    <div id="res-not-found" class="hidden">
+                        <p class="text-sm text-red-400 font-bold mt-2">Ticket No Vendido / Disponible</p>
+                    </div>
+                </div>
+
+            </div>
+            
+            <button onclick="closeWinnerModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
     </div>
 

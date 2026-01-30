@@ -43,26 +43,86 @@ const errorModal = document.getElementById('payment-error-modal');
 // ==========================================
 // 3. CARGAR CONFIGURACIÓN DESDE EL SERVIDOR
 // ==========================================
+
 async function loadRaffleConfig() {
     const loader = document.getElementById('app-loader');
     try {
         const response = await fetch(CONFIG_URL);
         const data = await response.json();
         
-        // A. Verificar estado Abierto/Cerrado
-        if (data.isClosed) {
-            lockRaffleUI();
+        // --- 1. BRANDING (LOGO, ICONO, NOMBRE) ---
+        
+        // A. Nombre de la Empresa (Título de la Pestaña)
+        if (data.companyName) {
+            document.title = data.companyName;
         }
 
+        // B. Favicon (Icono de la Pestaña)
+        if (data.faviconUrl) {
+            let link = document.querySelector("link[rel*='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'shortcut icon';
+                document.getElementsByTagName('head')[0].appendChild(link);
+            }
+            link.href = data.faviconUrl;
+        }
+
+        // C. Logo Visual (Header)
+        if (data.logoUrl) {
+            const logoImg = document.getElementById('custom-logo-img');
+            const defaultIcon = document.getElementById('default-logo-icon');
+            if (logoImg && defaultIcon) {
+                logoImg.src = data.logoUrl;
+                logoImg.classList.remove('hidden'); // Mostrar imagen
+                defaultIcon.classList.add('hidden'); // Ocultar icono por defecto
+            }
+        }
+
+        // --- 2. CONFIGURACIÓN DEL SORTEO ---
+
+        // Textos del Sorteo
+        const companyText = data.companyName || "Tu Empresa";
+        const raffleText = data.raffleTitle || "Gran Rifa";
+        const codeText = data.drawCode || "Sorteo General";
+
+        // Header: Muestra Nombre de Empresa
+        const headerTitle = document.getElementById('raffle-title-display');
+        const headerCode = document.getElementById('draw-code-display');
+        if(headerTitle) headerTitle.innerText = companyText; 
+        if(headerCode) headerCode.innerText = codeText;
+
+        // Hero: Muestra Nombre de Rifa
+        const heroTitle = document.getElementById('hero-title-display');
+        const heroCode = document.getElementById('hero-code-display');
+        if(heroTitle) heroTitle.innerText = raffleText;
+        if(heroCode) heroCode.innerText = codeText;
+
+
+        // --- 3. ESTADO Y PRECIOS ---
+
+        if (data.isClosed) lockRaffleUI();
+
         if (data.ticketPrice) {
+            TICKET_PRICE = parseFloat(data.ticketPrice);
+            CURRENCY = data.currency || '$';
+            
+            const totalTickets = parseInt(data.totalTickets) || 100;
+            const manualSold = parseInt(data.manualSold) || 0;
+            updateProgressBar(manualSold, totalTickets);
 
-                // F. DATOS BANCARIOS (NUEVO)
-            BANK_NAME = data.bankName || "Mercantil";
-            BANK_CODE = data.bankCode || "0105";
-            PAY_PHONE = data.paymentPhone || "04141234567";
-            PAY_CI = data.paymentCI || "J-123456789";
+            if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+                sliderImages = data.images;
+                initSlider(); 
+            }
+            
+            // Datos Bancarios
+            if (data.bankName) BANK_NAME = data.bankName;
+            if (data.bankCode) BANK_CODE = data.bankCode;
+            if (data.paymentPhone) PAY_PHONE = data.paymentPhone;
+            if (data.paymentCI) PAY_CI = data.paymentCI;
 
-            // Actualizar HTML
+            // Actualizar textos bancarios
             const bankInfo = document.getElementById('display-bank-info');
             const phoneDisplay = document.getElementById('display-payment-phone');
             const ciDisplay = document.getElementById('display-payment-ci');
@@ -71,49 +131,11 @@ async function loadRaffleConfig() {
             if(phoneDisplay) phoneDisplay.innerText = PAY_PHONE;
             if(ciDisplay) ciDisplay.innerText = PAY_CI;
 
-            // Configurar botones de copiado individuales dinámicamente
-            const btnPhone = document.getElementById('btn-copy-phone');
-            const btnCi = document.getElementById('btn-copy-ci');
-            
-            if(btnPhone) btnPhone.onclick = () => window.copiar(PAY_PHONE);
-            if(btnCi) btnCi.onclick = () => window.copiar(PAY_CI);
-            // B. Precios
-            TICKET_PRICE = parseFloat(data.ticketPrice);
-            CURRENCY = data.currency || '$';
-            
-            // C. Barra de Progreso
-            const totalTickets = parseInt(data.totalTickets) || 100;
-            const manualSold = parseInt(data.manualSold) || 0;
-            updateProgressBar(manualSold, totalTickets);
-
-            // D. Slider
-            if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-                sliderImages = data.images;
-                initSlider(); 
-            }
-
-            // E. Textos
-            const titleText = data.raffleTitle || "Gran Rifa";
-            const codeText = data.drawCode || "Sorteo General";
-
-            // Header
-            const headerTitle = document.getElementById('raffle-title-display');
-            const headerCode = document.getElementById('draw-code-display');
-            if(headerTitle) headerTitle.innerText = titleText;
-            if(headerCode) headerCode.innerText = codeText;
-
-            // Hero
-            const heroTitle = document.getElementById('hero-title-display');
-            const heroCode = document.getElementById('hero-code-display');
-            if(heroTitle) heroTitle.innerText = titleText;
-            if(heroCode) heroCode.innerText = codeText;
-
             updateUI(); 
         }
     } catch (error) {
         console.error("Error cargando configuración:", error);
     } finally {
-        // Quitar Preloader
         if (loader) {
             loader.classList.add('opacity-0');
             setTimeout(() => loader.classList.add('hidden'), 500);

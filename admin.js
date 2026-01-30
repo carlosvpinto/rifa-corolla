@@ -200,6 +200,114 @@ window.saveNewPin = async () => {
 };
 
 // ==========================================
+// 9. MÓDULO DE PREMIACIÓN
+// ==========================================
+const winnerModal = document.getElementById('winner-modal');
+const manualInput = document.getElementById('manual-winner-input');
+const resultBox = document.getElementById('winner-result');
+
+window.openWinnerModal = () => {
+    winnerModal.classList.remove('hidden');
+    setTimeout(() => {
+        winnerModal.classList.remove('opacity-0');
+        winnerModal.firstElementChild.nextElementSibling.classList.remove('scale-95');
+        winnerModal.firstElementChild.nextElementSibling.classList.add('scale-100');
+    }, 10);
+    // Limpiar vista anterior
+    resultBox.classList.add('hidden');
+    manualInput.value = '';
+};
+
+window.closeWinnerModal = () => {
+    winnerModal.classList.add('opacity-0');
+    winnerModal.firstElementChild.nextElementSibling.classList.add('scale-95');
+    setTimeout(() => winnerModal.classList.add('hidden'), 300);
+};
+
+window.findWinner = async (mode) => {
+    let numberToSend = null;
+
+    // Lógica para modo manual (Input)
+    if (mode === 'manual') {
+        numberToSend = manualInput.value;
+        if (!numberToSend) return showToast("Escribe un número", 'error');
+        // Ajuste de ceros (padding)
+        const digits = (window.CURRENT_POOL_SIZE - 1).toString().length;
+        numberToSend = numberToSend.toString().padStart(digits, '0');
+    }
+
+    // Efectos visuales de carga
+    resultBox.classList.remove('hidden');
+    document.getElementById('res-number').innerText = "...";
+    document.getElementById('res-found').classList.add('hidden');
+    document.getElementById('res-not-found').classList.add('hidden');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/find-winner`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: mode, winningNumber: numberToSend })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById('res-number').innerText = data.number;
+
+            if (data.found) {
+                // MOSTRAR DATOS
+                document.getElementById('res-found').classList.remove('hidden');
+                document.getElementById('res-name').innerText = data.client.name;
+                document.getElementById('res-ci').innerText = data.client.ci;
+                document.getElementById('res-phone').innerText = data.client.phone;
+                
+                // --- LÓGICA DE ESTADOS (CORREGIDA SEGÚN TU BD) ---
+                const statusBadge = document.getElementById('res-status-badge');
+                
+                // Obtenemos el método directamente de la respuesta del servidor
+                // (Asegúrate de que en server/index.js estés enviando: method: winnerDoc.verificationMethod)
+                const method = data.client.method; 
+
+                // Limpiar clases anteriores
+                statusBadge.className = "mb-3 inline-block px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border";
+
+                if (method === 'manual') {
+                    // CASO 1: Reportado por usuario, falta tu clic (Naranja)
+                    statusBadge.innerText = "⚠️ PENDIENTE POR VERIFICAR";
+                    statusBadge.classList.add("bg-orange-500/20", "text-orange-400", "border-orange-500/30");
+                } 
+                else if (method === 'manual_approved') {
+                    // CASO 2: Tú ya le diste al botón de validar (Verde)
+                    statusBadge.innerText = "✅ VERIFICADO (MANUAL)";
+                    statusBadge.classList.add("bg-green-500/20", "text-green-400", "border-green-500/30");
+                } 
+                else if (method === 'auto') {
+                    // CASO 3: Validado por Mercantil (Verde)
+                    statusBadge.innerText = "✅ VERIFICADO (BANCO)";
+                    statusBadge.classList.add("bg-green-500/20", "text-green-400", "border-green-500/30");
+                }
+                else {
+                    // Fallback por si acaso
+                    statusBadge.innerText = "ESTADO DESCONOCIDO";
+                    statusBadge.classList.add("bg-gray-500/20", "text-gray-400", "border-gray-500/30");
+                }
+
+            } else {
+                document.getElementById('res-not-found').classList.remove('hidden');
+            }
+        } else {
+            showToast(data.message || "Error", 'error');
+            resultBox.classList.add('hidden');
+        }
+
+    } catch (e) {
+        console.error(e);
+        showToast("Error de conexión", 'error');
+        resultBox.classList.add('hidden');
+    }
+};
+
+// ==========================================
 // 5. CONFIGURACIÓN GENERAL
 // ==========================================
 const ticketsSelect = document.getElementById('total-tickets-select');

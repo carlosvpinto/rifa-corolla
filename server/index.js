@@ -144,15 +144,95 @@ app.get('/', (req, res) => {
     res.send('API Rifa Corolla Funcionando 🚀');
 });
 
-// A. GUARDAR CONFIGURACIÓN (CON DATOS BANCARIOS)
+// ==========================================
+// 8. MÓDULO DE PREMIACIÓN (BUSCAR GANADOR)
+// ==========================================
+// ==========================================
+// 8. MÓDULO DE PREMIACIÓN (ACTUALIZADO CON ESTADOS)
+// ==========================================
+app.post('/api/find-winner', async (req, res) => {
+    try {
+        const { mode, winningNumber } = req.body;
+
+        let winnerNumber = winningNumber;
+        let winnerDoc = null;
+
+        // MODO 1: ALEATORIO (Solo busca entre los 100% verificados)
+        if (mode === 'random') {
+            const snapshot = await db.collection('ventas')
+                .where('status', 'in', ['pagado_verificado', 'manual_approved']) 
+                .get();
+
+            if (snapshot.empty) return res.status(404).json({ message: "No hay ventas verificadas para sortear." });
+
+            let allSoldTickets = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.numbers && Array.isArray(data.numbers)) {
+                    data.numbers.forEach(num => {
+                        allSoldTickets.push({ number: num, client: data });
+                    });
+                }
+            });
+
+            if (allSoldTickets.length === 0) return res.status(404).json({ message: "No hay tickets vendidos." });
+
+            const randomIndex = Math.floor(Math.random() * allSoldTickets.length);
+            const luckyPick = allSoldTickets[randomIndex];
+            
+            winnerNumber = luckyPick.number;
+            winnerDoc = luckyPick.client;
+        } 
+        
+        // MODO 2: MANUAL (Busca verificados Y pendientes)
+        else {
+            if (!winningNumber) return res.status(400).json({ error: "Falta el número" });
+
+            const snapshot = await db.collection('ventas')
+                .where('numbers', 'array-contains', winningNumber)
+                // AQUI EL CAMBIO: Ahora incluimos 'pendiente_verificacion'
+                .where('status', 'in', ['pagado_verificado', 'manual_approved', 'pendiente_verificacion'])
+                .get();
+
+            if (!snapshot.empty) {
+                winnerDoc = snapshot.docs[0].data();
+            }
+        }
+
+       if (winnerDoc) {
+            res.json({
+                found: true,
+                number: winnerNumber,
+                client: {
+                    name: winnerDoc.name,
+                    ci: winnerDoc.ci,
+                    phone: winnerDoc.phone,
+                    email: winnerDoc.email,
+                    status: winnerDoc.status, 
+                    // ESTA LÍNEA ES VITAL:
+                    method: winnerDoc.verificationMethod 
+                }
+            });
+        } else {
+            res.json({ found: false, number: winnerNumber, message: "Número disponible (Nadie lo compró)." });
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// A. GUARDAR CONFIGURACIÓN (CON BRANDING)
 app.post('/api/config', async (req, res) => {
   try {
     const { 
         totalTickets, ticketPrice, currency, manualSold, images, 
         adminPin, raffleTitle, drawCode, 
         isClosed, verificationMode,
-        // 🔴 NUEVOS CAMPOS BANCARIOS
-        bankName, bankCode, paymentPhone, paymentCI 
+        bankName, bankCode, paymentPhone, paymentCI,
+        // 🔴 NUEVOS CAMPOS:
+        companyName, logoUrl, faviconUrl
     } = req.body;
     
     const updateData = {};
@@ -164,22 +244,27 @@ app.post('/api/config', async (req, res) => {
     if (manualSold !== undefined) updateData.manualSold = parseInt(manualSold);
     if (isClosed !== undefined) updateData.isClosed = isClosed;
     if (verificationMode !== undefined) updateData.verificationMode = verificationMode;
+    
     if (images !== undefined) updateData.images = images;
     if (raffleTitle !== undefined) updateData.raffleTitle = raffleTitle;
     if (drawCode !== undefined) updateData.drawCode = drawCode;
     
-    // 🔴 GUARDAR DATOS BANCARIOS
     if (bankName !== undefined) updateData.bankName = bankName;
     if (bankCode !== undefined) updateData.bankCode = bankCode;
     if (paymentPhone !== undefined) updateData.paymentPhone = paymentPhone;
     if (paymentCI !== undefined) updateData.paymentCI = paymentCI;
+
+    // 🔴 GUARDAR BRANDING
+    if (companyName !== undefined) updateData.companyName = companyName;
+    if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
+    if (faviconUrl !== undefined) updateData.faviconUrl = faviconUrl;
 
     if (adminPin && adminPin.trim() !== "") updateData.adminPin = adminPin;
 
     if (Object.keys(updateData).length === 0) return res.status(400).json({ error: "No datos" });
 
     await db.collection('settings').doc('general').set(updateData, { merge: true });
-    res.json({ success: true, message: "Configuración guardada" });
+    res.json({ success: true, message: "Guardado" });
 
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
