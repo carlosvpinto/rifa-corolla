@@ -21,7 +21,7 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 // ==========================================
-// 2. UI HELPERS (TOAST Y CONFIRM)
+// 2. UI HELPERS
 // ==========================================
 function showToast(message, type = 'success') {
     const toast = document.getElementById('admin-toast');
@@ -61,6 +61,7 @@ function showConfirm(title, message) {
             setTimeout(() => { modal.classList.add('hidden'); resolve(result); }, 300);
         };
         
+        // Clonar botones para limpiar eventos viejos
         const btnYes = document.getElementById('btn-confirm');
         const btnNo = document.getElementById('btn-cancel');
         const newYes = btnYes.cloneNode(true);
@@ -76,9 +77,21 @@ function showConfirm(title, message) {
 // ==========================================
 // 3. VARIABLES GLOBALES Y LOGIN
 // ==========================================
-// ⚠️ URL DE PRODUCCIÓN (RENDER)
-//const API_BASE_URL = "https://rifa-carros-corolla.onrender.com/api"; 
-const API_BASE_URL = "http://localhost:3000/api";
+// ⚠️ URL DE PRODUCCIÓN (O LOCAL)
+// const API_BASE_URL = "https://rifa-carros-corolla.onrender.com/api"; 
+const API_BASE_URL = "http://localhost:3000/api"; 
+
+// OBTENER ID DEL CLIENTE DE LA URL
+const urlParams = new URLSearchParams(window.location.search);
+
+const CLIENT_ID = urlParams.get('id') || 'demo';
+const CLIENT_API_URL = `${API_BASE_URL}/${CLIENT_ID}`;
+
+// --- CORRECCIÓN SAAS: VINCULAR BRANDING CON ID ---
+const brandingLink = document.getElementById('branding-link');
+if (brandingLink) {
+    brandingLink.href = `branding.html?id=${CLIENT_ID}`;
+}
 
 window.CURRENT_POOL_SIZE = 100;
 window.CURRENT_PRICE = 5;
@@ -93,9 +106,9 @@ const pinInput = document.getElementById('admin-pin');
 const loginError = document.getElementById('login-error');
 
 // Auto-login
-if (sessionStorage.getItem('admin_auth') === 'true') showDashboard();
+if (sessionStorage.getItem(`admin_auth_${CLIENT_ID}`) === 'true') showDashboard();
 
-// Login contra el servidor
+// Login
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const inputPin = pinInput.value;
@@ -106,12 +119,12 @@ loginForm.addEventListener('submit', async (e) => {
     loginError.classList.add('hidden');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/admin/login`, { 
+        const response = await fetch(`${CLIENT_API_URL}/admin/login`, { 
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: inputPin })
         });
         const result = await response.json();
         if (response.ok && result.success) {
-            sessionStorage.setItem('admin_auth', 'true');
+            sessionStorage.setItem(`admin_auth_${CLIENT_ID}`, 'true');
             showDashboard();
         } else {
             loginError.classList.remove('hidden');
@@ -129,7 +142,7 @@ function showDashboard() {
     loadConfig(); 
 }
 
-window.logout = () => { sessionStorage.removeItem('admin_auth'); location.reload(); };
+window.logout = () => { sessionStorage.removeItem(`admin_auth_${CLIENT_ID}`); location.reload(); };
 window.refreshData = async () => {
     const icon = document.getElementById('refresh-icon');
     if(icon) icon.classList.add('animate-spin');
@@ -139,7 +152,7 @@ window.refreshData = async () => {
 };
 
 // ==========================================
-// 4. LÓGICA DE MENÚ Y MODAL SEGURIDAD
+// 4. LÓGICA DE MENÚ Y MODALS
 // ==========================================
 window.toggleMenu = () => {
     const menu = document.getElementById('dropdown-menu');
@@ -161,154 +174,28 @@ document.addEventListener('click', (e) => {
     if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) closeMenu();
 });
 
+// Modales
+window.openSettingsModal = () => {
+    const modal = document.getElementById('settings-modal');
+    modal.classList.remove('hidden');
+    closeMenu();
+};
+window.closeSettingsModal = () => { document.getElementById('settings-modal').classList.add('hidden'); };
+
 window.openSecurityModal = () => {
     const modal = document.getElementById('security-modal');
     modal.classList.remove('hidden');
-    setTimeout(() => modal.firstElementChild.nextElementSibling.classList.remove('opacity-0', 'scale-95'), 10);
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
     closeMenu();
 };
-
 window.closeSecurityModal = () => {
     const modal = document.getElementById('security-modal');
     modal.classList.add('opacity-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
 };
 
-// Guardar nuevo PIN
-window.saveNewPin = async () => {
-    const newPin = document.getElementById('new-admin-pin').value;
-    if(!newPin || newPin.trim() === "") return showToast("El PIN no puede estar vacío", 'error');
-
-    if(!await showConfirm("¿Cambiar PIN?", "Deberás usar el nuevo PIN la próxima vez.")) return;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminPin: newPin })
-        });
-
-        if(response.ok) {
-            showToast("PIN actualizado correctamente");
-            closeSecurityModal();
-            document.getElementById('new-admin-pin').value = "";
-        } else {
-            showToast("Error al guardar PIN", 'error');
-        }
-    } catch (e) { showToast("Error de conexión", 'error'); }
-};
-
 // ==========================================
-// 9. MÓDULO DE PREMIACIÓN
-// ==========================================
-const winnerModal = document.getElementById('winner-modal');
-const manualInput = document.getElementById('manual-winner-input');
-const resultBox = document.getElementById('winner-result');
-
-window.openWinnerModal = () => {
-    winnerModal.classList.remove('hidden');
-    setTimeout(() => {
-        winnerModal.classList.remove('opacity-0');
-        winnerModal.firstElementChild.nextElementSibling.classList.remove('scale-95');
-        winnerModal.firstElementChild.nextElementSibling.classList.add('scale-100');
-    }, 10);
-    // Limpiar vista anterior
-    resultBox.classList.add('hidden');
-    manualInput.value = '';
-};
-
-window.closeWinnerModal = () => {
-    winnerModal.classList.add('opacity-0');
-    winnerModal.firstElementChild.nextElementSibling.classList.add('scale-95');
-    setTimeout(() => winnerModal.classList.add('hidden'), 300);
-};
-
-window.findWinner = async (mode) => {
-    let numberToSend = null;
-
-    // Lógica para modo manual (Input)
-    if (mode === 'manual') {
-        numberToSend = manualInput.value;
-        if (!numberToSend) return showToast("Escribe un número", 'error');
-        // Ajuste de ceros (padding)
-        const digits = (window.CURRENT_POOL_SIZE - 1).toString().length;
-        numberToSend = numberToSend.toString().padStart(digits, '0');
-    }
-
-    // Efectos visuales de carga
-    resultBox.classList.remove('hidden');
-    document.getElementById('res-number').innerText = "...";
-    document.getElementById('res-found').classList.add('hidden');
-    document.getElementById('res-not-found').classList.add('hidden');
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/find-winner`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: mode, winningNumber: numberToSend })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            document.getElementById('res-number').innerText = data.number;
-
-            if (data.found) {
-                // MOSTRAR DATOS
-                document.getElementById('res-found').classList.remove('hidden');
-                document.getElementById('res-name').innerText = data.client.name;
-                document.getElementById('res-ci').innerText = data.client.ci;
-                document.getElementById('res-phone').innerText = data.client.phone;
-                
-                // --- LÓGICA DE ESTADOS (CORREGIDA SEGÚN TU BD) ---
-                const statusBadge = document.getElementById('res-status-badge');
-                
-                // Obtenemos el método directamente de la respuesta del servidor
-                // (Asegúrate de que en server/index.js estés enviando: method: winnerDoc.verificationMethod)
-                const method = data.client.method; 
-
-                // Limpiar clases anteriores
-                statusBadge.className = "mb-3 inline-block px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border";
-
-                if (method === 'manual') {
-                    // CASO 1: Reportado por usuario, falta tu clic (Naranja)
-                    statusBadge.innerText = "⚠️ PENDIENTE POR VERIFICAR";
-                    statusBadge.classList.add("bg-orange-500/20", "text-orange-400", "border-orange-500/30");
-                } 
-                else if (method === 'manual_approved') {
-                    // CASO 2: Tú ya le diste al botón de validar (Verde)
-                    statusBadge.innerText = "✅ VERIFICADO (MANUAL)";
-                    statusBadge.classList.add("bg-green-500/20", "text-green-400", "border-green-500/30");
-                } 
-                else if (method === 'auto') {
-                    // CASO 3: Validado por Mercantil (Verde)
-                    statusBadge.innerText = "✅ VERIFICADO (BANCO)";
-                    statusBadge.classList.add("bg-green-500/20", "text-green-400", "border-green-500/30");
-                }
-                else {
-                    // Fallback por si acaso
-                    statusBadge.innerText = "ESTADO DESCONOCIDO";
-                    statusBadge.classList.add("bg-gray-500/20", "text-gray-400", "border-gray-500/30");
-                }
-
-            } else {
-                document.getElementById('res-not-found').classList.remove('hidden');
-            }
-        } else {
-            showToast(data.message || "Error", 'error');
-            resultBox.classList.add('hidden');
-        }
-
-    } catch (e) {
-        console.error(e);
-        showToast("Error de conexión", 'error');
-        resultBox.classList.add('hidden');
-    }
-};
-
-// ==========================================
-// 5. CONFIGURACIÓN GENERAL
+// 5. CONFIGURACIÓN (CARGAR Y GUARDAR)
 // ==========================================
 const ticketsSelect = document.getElementById('total-tickets-select');
 const priceInput = document.getElementById('ticket-price-input');
@@ -326,7 +213,7 @@ const bankCodeInput = document.getElementById('bank-code-input');
 const paymentPhoneInput = document.getElementById('payment-phone-input');
 const paymentCIInput = document.getElementById('payment-ci-input');
 
-// Eventos visuales switches
+// Eventos visuales
 if(statusToggle) {
     statusToggle.addEventListener('change', () => {
         statusLabel.innerText = statusToggle.checked ? "ABIERTO" : "CERRADO";
@@ -340,13 +227,13 @@ if(verificationToggle) {
     });
 }
 
-// Cargar Config
 async function loadConfig() {
     try {
-        const response = await fetch(`${API_BASE_URL}/config`);
+        const response = await fetch(`${CLIENT_API_URL}/config`);
         const data = await response.json();
         
         if (data.totalTickets) {
+            // Generales
             if(ticketsSelect) ticketsSelect.value = data.totalTickets;
             if(priceInput) priceInput.value = data.ticketPrice;
             if(currencySelect) currencySelect.value = data.currency;
@@ -354,15 +241,19 @@ async function loadConfig() {
             if(titleInput) titleInput.value = data.raffleTitle || "";
             if(codeInput) codeInput.value = data.drawCode || "";
 
-            // Switch Estado (Invertido: isClosed=true -> checked=false)
+            // Banco
+            if(bankNameInput) bankNameInput.value = data.bankName || "Mercantil";
+            if(bankCodeInput) bankCodeInput.value = data.bankCode || "0105";
+            if(paymentPhoneInput) paymentPhoneInput.value = data.paymentPhone || "04141234567";
+            if(paymentCIInput) paymentCIInput.value = data.paymentCI || "J-123456789";
+
+            // Switches
             if(statusToggle) {
                 statusToggle.checked = !data.isClosed; 
                 statusToggle.dispatchEvent(new Event('change'));
             }
-
-            // Switch Verificación (Manual/Auto)
             if(verificationToggle) {
-                // Si es manual, checked=false. Si es auto (o null), checked=true
+                // Si es manual, checked=false. Si es auto, checked=true
                 verificationToggle.checked = data.verificationMode !== 'manual';
                 verificationToggle.dispatchEvent(new Event('change'));
             }
@@ -373,22 +264,18 @@ async function loadConfig() {
                 renderPreviews(); 
             }
 
-            if(bankNameInput) bankNameInput.value = data.bankName || "Mercantil";
-            if(bankCodeInput) bankCodeInput.value = data.bankCode || "0105";
-            if(paymentPhoneInput) paymentPhoneInput.value = data.paymentPhone || "04141234567";
-            if(paymentCIInput) paymentCIInput.value = data.paymentCI || "J-123456789";
-
+            // Globales
             window.CURRENT_POOL_SIZE = parseInt(data.totalTickets);
             window.CURRENT_PRICE = parseFloat(data.ticketPrice);
             window.CURRENT_CURRENCY = data.currency;
             
-            loadData();
+            loadData(); // Cargar ventas
         }
     } catch (error) { console.error(error); }
 }
 
-// Guardar Config
 window.saveConfig = async () => {
+    // Recopilar datos
     const newTotal = ticketsSelect.value;
     const newPrice = priceInput.value;
     const newCurrency = currencySelect.value;
@@ -397,40 +284,28 @@ window.saveConfig = async () => {
     const newTitle = titleInput.value;
     const newCode = codeInput.value;
     
-     // Obtener valores bancarios
     const bankName = bankNameInput.value;
     const bankCode = bankCodeInput.value;
     const payPhone = paymentPhoneInput.value;
     const payCI = paymentCIInput.value;
 
-    // Verificación Manual/Auto
     const isAutoVerification = verificationToggle.checked;
     const modeToSend = isAutoVerification ? 'auto' : 'manual';
 
-    if (!await showConfirm("¿Guardar cambios?", "Se actualizará la configuración de la rifa.")) return;
+    if (!await showConfirm("¿Guardar cambios?", "Se actualizará la configuración.")) return;
 
     const btn = document.querySelector('button[onclick="saveConfig()"]');
     const originalText = btn.innerText;
     btn.innerText = "Guardando..."; btn.disabled = true;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/config`, {
+        const response = await fetch(`${CLIENT_API_URL}/config`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                totalTickets: newTotal,
-                ticketPrice: newPrice,
-                currency: newCurrency,
-                manualSold: newManualSold,
-                isClosed: !isRaffleOpen,
-                raffleTitle: newTitle, 
-                drawCode: newCode,
-                verificationMode: modeToSend, // <--- Enviamos el modo
-                 // 🔴 NUEVOS CAMPOS
-                bankName: bankName,
-                bankCode: bankCode,
-                paymentPhone: payPhone,
-                paymentCI: payCI
+                totalTickets: newTotal, ticketPrice: newPrice, currency: newCurrency, manualSold: newManualSold,
+                isClosed: !isRaffleOpen, raffleTitle: newTitle, drawCode: newCode, verificationMode: modeToSend,
+                bankName, bankCode, paymentPhone: payPhone, paymentCI: payCI
             })
         });
 
@@ -445,25 +320,51 @@ window.saveConfig = async () => {
     finally { btn.innerText = originalText; btn.disabled = false; }
 };
 
+// Guardar nuevo PIN
+window.saveNewPin = async () => {
+    const newPin = document.getElementById('new-admin-pin').value;
+    if(!newPin) return showToast("Escribe un PIN", 'error');
+    if(!await showConfirm("¿Cambiar PIN?", "Deberás usar el nuevo PIN.")) return;
+
+    try {
+        const response = await fetch(`${CLIENT_API_URL}/config`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminPin: newPin })
+        });
+        if(response.ok) { showToast("PIN actualizado"); closeSecurityModal(); }
+        else showToast("Error al guardar", 'error');
+    } catch (e) { showToast("Error", 'error'); }
+};
+
 // ==========================================
-// 6. CARGA DE DATOS DE VENTAS (TABLA RESPONSIVE)
+// 6. VENTAS Y TABLA
 // ==========================================
 let allSales = []; 
 
 async function loadData() {
     const tableBody = document.getElementById('sales-table-body');
     try {
-        const q = query(collection(db, "ventas"));
+        // En SaaS, la colección de ventas es una subcolección dentro del documento del cliente
+        // Como estamos en el cliente, no podemos acceder a 'raffles/ID/sales' directamente desde aquí si las reglas de seguridad
+        // no están configuradas para ello. 
+        // PERO: Si estamos usando el SDK de Admin en el server, está bien.
+        // SI USAMOS CLIENT SDK EN FRONT: Necesitamos que el servidor nos de los datos o tener permisos de lectura.
+        // NOTA: Para este admin.js, lo ideal es crear un endpoint en el backend /api/:id/sales
+        // Pero como estamos usando Firebase directo aqui, debemos construir la query correcta.
+        
+        // CORRECCIÓN SAAS: Buscar en raffles -> ID -> sales
+        const salesRef = collection(db, "raffles", CLIENT_ID, "sales");
+        const q = query(salesRef);
         const querySnapshot = await getDocs(q);
+        
         allSales = [];
         let totalMoney = 0; let totalTickets = 0;
 
         querySnapshot.forEach((doc) => {
             const rawData = doc.data();
-            let qty = rawData.ticketsQty;
-            if (!qty && rawData.numbers && Array.isArray(rawData.numbers)) qty = rawData.numbers.length; else if (!qty) qty = 0;
-            let amount = rawData.totalAmount;
-            if (!amount) amount = qty * window.CURRENT_PRICE; 
+            let qty = rawData.ticketsQty || 0;
+            if (!qty && rawData.numbers) qty = rawData.numbers.length;
+            let amount = rawData.totalAmount || (qty * window.CURRENT_PRICE);
             
             allSales.push({
                 id: doc.id, ...rawData, ticketsQty: qty, totalAmount: amount, 
@@ -475,9 +376,9 @@ async function loadData() {
 
         allSales.sort((a, b) => (b.dateObj?.seconds || 0) - (a.dateObj?.seconds || 0));
 
+        // Actualizar tarjetas
         const availableTickets = window.CURRENT_POOL_SIZE - totalTickets;
         const CURRENCY_SYMBOL = window.CURRENT_CURRENCY || '$';
-
         document.getElementById('stat-available').innerText = availableTickets;
         document.getElementById('stat-money').innerText = CURRENCY_SYMBOL + " " + totalMoney.toFixed(2); 
         document.getElementById('stat-tickets').innerText = totalTickets;
@@ -491,44 +392,29 @@ function renderTable(data) {
     const tableBody = document.getElementById('sales-table-body');
     if(!tableBody) return;
     tableBody.innerHTML = '';
-
-    if (data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Sin ventas registradas.</td></tr>';
-        return;
-    }
+    if (data.length === 0) { tableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Sin ventas.</td></tr>'; return; }
 
     data.forEach(sale => {
-        // 1. Formateo de Fecha
         let dateStr = "N/A";
-        if (sale.dateObj && sale.dateObj.toDate) {
-            dateStr = sale.dateObj.toDate().toLocaleDateString('es-VE', { 
-                month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' 
-            });
-        }
-        
-        // 2. Moneda
+        if (sale.dateObj && sale.dateObj.toDate) dateStr = sale.dateObj.toDate().toLocaleDateString('es-VE', { month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
         const saleCurrency = sale.currency || window.CURRENT_CURRENCY;
 
-        // 3. LÓGICA DE ESTADO (Botón vs Ícono)
-        // Es pendiente SOLO si es 'manual'. Si es 'auto' o 'manual_approved', es verificado.
+        // ESTADOS
         const isPending = sale.verificationMethod === 'manual';
         
         let statusIcon;
-
         if (isPending) {
-            // Botón Naranja para Validar
             statusIcon = `
                 <button onclick="approveSale('${sale.id}', '${sale.name}')" 
                         class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 group border border-orange-500/20 ml-auto mt-1"
-                        title="Click para confirmar el pago en el banco">
+                        title="Click para confirmar el pago">
                     <span class="material-symbols-outlined text-[16px]">pending_actions</span>
                     <span class="text-[10px] font-bold uppercase group-hover:underline">Validar</span>
                 </button>
             `;
         } else {
-            // Check Verde Estático
             statusIcon = `
-                <div class="flex items-center justify-end gap-1 text-primary mt-1 opacity-80" title="Pago Verificado">
+                <div class="flex items-center justify-end gap-1 text-primary mt-1 opacity-80">
                     <span class="text-[10px] font-bold uppercase tracking-wider">Listo</span>
                     <span class="material-symbols-outlined text-[18px]">verified</span>
                 </div>
@@ -539,51 +425,20 @@ function renderTable(data) {
         row.className = "hover:bg-white/5 transition-colors border-b border-white/5";
         
         row.innerHTML = `
-            <!-- 1. Fecha (Solo PC) -->
-            <td class="p-3 text-gray-400 text-[10px] hidden sm:table-cell whitespace-nowrap align-top">
-                ${dateStr}
-            </td>
-            
-            <!-- 2. Cliente (Nombre + CI en Móvil) -->
+            <td class="p-3 text-gray-400 text-[10px] hidden sm:table-cell whitespace-nowrap align-top">${dateStr}</td>
             <td class="p-3 align-top">
-                <div class="font-bold text-white text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none">
-                    ${sale.name}
-                </div>
-                <div class="text-[10px] text-primary sm:hidden">
-                    ${sale.ci}
-                </div>
+                <div class="font-bold text-white text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none">${sale.name}</div>
+                <div class="text-[10px] text-primary sm:hidden">${sale.ci}</div>
             </td>
-
-            <!-- 3. Referencia -->
-            <td class="p-3 align-top">
-                <span class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded text-[10px] tracking-wider">
-                    ${sale.ref}
-                </span>
-            </td>
-
-            <!-- 4. Contacto + CI (Solo PC) -->
-            <td class="p-3 text-gray-400 text-xs hidden sm:table-cell align-top">
-                <span class="text-primary font-bold">${sale.ci}</span><br>
-                ${sale.phone}
-            </td>
-
-            <!-- 5. Tickets (Scroll en Móvil, Wrap en PC) -->
+            <td class="p-3 align-top"><span class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded text-[10px] tracking-wider">${sale.ref}</span></td>
+            <td class="p-3 text-gray-400 text-xs hidden sm:table-cell align-top"><span class="text-primary font-bold">${sale.ci}</span><br>${sale.phone}</td>
             <td class="p-3 max-w-[120px] sm:max-w-none align-top">
                 <div class="flex gap-1 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-1">
-                    ${sale.numbers.map(n => `
-                        <span class="bg-surface-highlight border border-white/10 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0">
-                            ${n}
-                        </span>
-                    `).join('')}
+                    ${sale.numbers.map(n => `<span class="bg-surface-highlight border border-white/10 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0">${n}</span>`).join('')}
                 </div>
             </td>
-
-            <!-- 6. Monto + Acción -->
             <td class="p-3 text-right align-top">
-                <div class="font-bold text-green-400 text-xs sm:text-sm whitespace-nowrap">
-                    ${saleCurrency} ${sale.totalAmount.toFixed(2)}
-                </div>
-                <!-- Aquí insertamos el botón o el ícono -->
+                <div class="font-bold text-green-400 text-xs sm:text-sm whitespace-nowrap">${saleCurrency} ${sale.totalAmount.toFixed(2)}</div>
                 ${statusIcon}
             </td>
         `;
@@ -592,7 +447,27 @@ function renderTable(data) {
 }
 
 // ==========================================
-// 7. GESTOR DE IMÁGENES (STORAGE)
+// 7. APROBACIÓN MANUAL
+// ==========================================
+window.approveSale = async (saleId, clientName) => {
+    if (!await showConfirm("¿Aprobar Pago?", `Confirmar pago de ${clientName}.`)) return;
+    showToast("Procesando...", 'success');
+
+    try {
+        const response = await fetch(`${CLIENT_API_URL}/approve`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ saleId: saleId })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            showToast(`✅ Pago de ${clientName} aprobado`);
+            loadData();
+        } else { showToast(result.error || "Error", 'error'); }
+    } catch (e) { showToast("Error de conexión", 'error'); }
+};
+
+// ==========================================
+// 8. IMÁGENES
 // ==========================================
 window.handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
@@ -642,21 +517,19 @@ window.saveImagesToBackend = async () => {
         }
         const finalImageList = [...existingUrls, ...uploadedUrls];
         
-        // Mantener configuración actual al guardar fotos
-        const tickets = document.getElementById('total-tickets-select').value;
-        const price = document.getElementById('ticket-price-input').value;
-        const currency = document.getElementById('currency-select').value;
-        const manualSold = document.getElementById('manual-sold-input').value;
-        const isClosed = !document.getElementById('raffle-status-toggle').checked;
-        const newTitle = titleInput.value;
-        const newCode = codeInput.value;
+        // Para no borrar lo otro, necesitamos los valores actuales
+        // (Simplificado: asumimos que el DOM tiene los valores cargados)
+        const tickets = ticketsSelect.value;
+        const price = priceInput.value;
+        const currency = currencySelect.value;
+        const manualSold = manualSoldInput.value;
+        const isClosed = !statusToggle.checked;
         const isAuto = verificationToggle.checked;
 
-        const response = await fetch(`${API_BASE_URL}/config`, {
+        const response = await fetch(`${CLIENT_API_URL}/config`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                totalTickets: tickets, ticketPrice: price, currency: currency, manualSold: manualSold, isClosed: isClosed,
-                raffleTitle: newTitle, drawCode: newCode, verificationMode: isAuto ? 'auto' : 'manual',
+                totalTickets: tickets, ticketPrice: price, currency: currency, manualSold: manualSold, isClosed: isClosed, verificationMode: isAuto ? 'auto' : 'manual',
                 images: finalImageList 
             })
         });
@@ -667,39 +540,82 @@ window.saveImagesToBackend = async () => {
     finally { btn.innerText = originalText; btn.disabled = false; }
 };
 
-// APROBAR VENTA MANUALMENTE
-window.approveSale = async (saleId, clientName) => {
-    // 1. Confirmar Acción
-    if (!await showConfirm("¿Aprobar Pago?", `Confirmar pago de ${clientName}.\nSe enviará el correo de validación.`)) return;
+// ==========================================
+// 9. SORTEO (GANADOR)
+// ==========================================
+const winnerModal = document.getElementById('winner-modal');
+const manualInput = document.getElementById('manual-winner-input');
+const resultBox = document.getElementById('winner-result');
 
-    // Feedback visual inmediato (buscamos el botón y lo ponemos cargando)
-    // (Opcional, pero se ve bien)
-    
-    showToast("Procesando aprobación...", 'success');
+window.openWinnerModal = () => {
+    winnerModal.classList.remove('hidden');
+    setTimeout(() => {
+        winnerModal.classList.remove('opacity-0');
+        winnerModal.firstElementChild.nextElementSibling.classList.remove('scale-95');
+        winnerModal.firstElementChild.nextElementSibling.classList.add('scale-100');
+    }, 10);
+    resultBox.classList.add('hidden');
+    manualInput.value = '';
+};
+
+window.closeWinnerModal = () => {
+    winnerModal.classList.add('opacity-0');
+    winnerModal.firstElementChild.nextElementSibling.classList.add('scale-95');
+    setTimeout(() => winnerModal.classList.add('hidden'), 300);
+};
+
+window.findWinner = async (mode) => {
+    let numberToSend = null;
+
+    if (mode === 'manual') {
+        numberToSend = manualInput.value;
+        if (!numberToSend) return showToast("Escribe un número", 'error');
+        const digits = (window.CURRENT_POOL_SIZE - 1).toString().length;
+        numberToSend = numberToSend.toString().padStart(digits, '0');
+    }
+
+    resultBox.classList.remove('hidden');
+    document.getElementById('res-number').innerText = "...";
+    document.getElementById('res-found').classList.add('hidden');
+    document.getElementById('res-not-found').classList.add('hidden');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/approve`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ saleId: saleId })
+        const response = await fetch(`${CLIENT_API_URL}/find-winner`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: mode, winningNumber: numberToSend })
         });
-
-        const result = await response.json();
+        const data = await response.json();
 
         if (response.ok) {
-            showToast(`✅ Pago de ${clientName} aprobado`);
-            loadData(); // Recargar tabla para ver el check verde
-        } else {
-            showToast(result.error || "Error al aprobar", 'error');
-        }
-    } catch (e) {
-        console.error(e);
-        showToast("Error de conexión", 'error');
-    }
+            document.getElementById('res-number').innerText = data.number;
+            if (data.found) {
+                document.getElementById('res-found').classList.remove('hidden');
+                document.getElementById('res-name').innerText = data.client.name;
+                document.getElementById('res-ci').innerText = data.client.ci;
+                document.getElementById('res-phone').innerText = data.client.phone;
+                
+                const statusBadge = document.getElementById('res-status-badge');
+                const method = data.client.method; 
+
+                statusBadge.className = "mb-3 inline-block px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border";
+                if (method === 'manual') {
+                    statusBadge.innerText = "⚠️ PENDIENTE POR VERIFICAR";
+                    statusBadge.classList.add("bg-orange-500/20", "text-orange-400", "border-orange-500/30");
+                } else if (method === 'manual_approved') {
+                    statusBadge.innerText = "✅ VERIFICADO (MANUAL)";
+                    statusBadge.classList.add("bg-green-500/20", "text-green-400", "border-green-500/30");
+                } else {
+                    statusBadge.innerText = "✅ VERIFICADO (BANCO)";
+                    statusBadge.classList.add("bg-green-500/20", "text-green-400", "border-green-500/30");
+                }
+
+            } else { document.getElementById('res-not-found').classList.remove('hidden'); }
+        } else { showToast(data.message || "Error", 'error'); }
+    } catch (e) { showToast("Error de conexión", 'error'); }
 };
 
 // ==========================================
-// 8. BÚSQUEDA Y EXPORTACIÓN
+// 10. EXPORTACIÓN
 // ==========================================
 const searchInput = document.getElementById('search-input');
 if(searchInput) {
@@ -719,6 +635,6 @@ window.exportToCSV = () => {
     });
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", "reporte_ventas.csv");
+    link.setAttribute("download", `ventas_${CLIENT_ID}.csv`);
     document.body.appendChild(link); link.click();
 };

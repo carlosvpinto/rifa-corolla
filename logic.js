@@ -1,13 +1,16 @@
-// ==========================================
-// 1. CONFIGURACIÓN Y VARIABLES
-// ==========================================
-// ⚠️ URL DE PRODUCCIÓN
-//const BACKEND_URL = "https://rifa-carros-corolla.onrender.com/api/comprar";
-//const CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/config";
+// 1. OBTENER ID DEL CLIENTE DE LA URL
+const urlParams = new URLSearchParams(window.location.search);
+const CLIENT_ID = urlParams.get('id') || 'demo'; // 'demo' es tu rifa personal
 
-// ⚠️ URL DE DESARROLLO (LOCAL)
-const BACKEND_URL = "http://localhost:3000/api/comprar";
-const CONFIG_URL = "http://localhost:3000/api/config";
+// 2. CONFIGURACIÓN DINÁMICA
+// ⚠️ URL PRODUCCIÓN
+const BASE_API = "http://localhost:3000/api";
+const BACKEND_URL = `${BASE_API}/${CLIENT_ID}/comprar`;
+const CONFIG_URL = `${BASE_API}/${CLIENT_ID}/config`;
+
+// ... (El resto del archivo sigue igual) ...
+//const BACKEND_URL = "http://localhost:3000/api/comprar";
+//const CONFIG_URL = "http://localhost:3000/api/config";
 
 // Variables Globales
 let TICKET_PRICE = 5; 
