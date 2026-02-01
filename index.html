@@ -81,24 +81,41 @@
             
             <!-- Tarjeta del Premio -->
             <div class="group relative rounded-2xl bg-surface-dark shadow-lg shadow-black/20 overflow-hidden ring-1 ring-white/10">
-               <div class="relative h-56 w-full bg-gray-800 group">
-                    <!-- Imagen Dinámica -->
-                    <img id="hero-image" alt="Premio Rifa" class="h-full w-full object-cover transition-opacity duration-500" src="https://images.unsplash.com/photo-1617788138017-80ad40651399?q=80&w=2070&auto=format&fit=crop" />
+              <!-- Tarjeta del Premio -->
+            <div class="group relative rounded-2xl bg-surface-dark shadow-lg shadow-black/20 overflow-hidden ring-1 ring-white/10">
+               <div class="relative h-56 w-full bg-gray-800 group overflow-hidden">
                     
-                    <!-- Controles del Slider (Ocultos si solo hay 1 foto) -->
-                    <div id="slider-controls" class="hidden">
+                    <!-- 1. SKELETON LOADER (Animación de Carga) -->
+                    <!-- Se muestra mientras la imagen descarga -->
+                    <div id="hero-loader" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-800 animate-pulse">
+                        <span class="material-symbols-outlined text-4xl text-gray-600 mb-2">image</span>
+                        <p class="text-xs text-gray-500 font-bold tracking-widest">CARGANDO PREMIO...</p>
+                    </div>
+
+                    <!-- 2. IMAGEN REAL (Oculta al inicio) -->
+                    <!-- Quitamos el src por defecto y ponemos opacity-0 -->
+                    <img id="hero-image" 
+                         alt="Premio Rifa" 
+                         class="h-full w-full object-cover transition-opacity duration-700 opacity-0 relative z-0" 
+                         src="" />
+                    
+                    <!-- Controles del Slider -->
+                    <div id="slider-controls" class="hidden z-20">
                         <button onclick="prevSlide()" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-primary/80 text-white p-1 rounded-full transition-colors backdrop-blur-sm">
                             <span class="material-symbols-outlined">chevron_left</span>
                         </button>
                         <button onclick="nextSlide()" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-primary/80 text-white p-1 rounded-full transition-colors backdrop-blur-sm">
                             <span class="material-symbols-outlined">chevron_right</span>
                         </button>
-                        
-                        <!-- Puntos indicadores -->
-                        <div id="slider-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
-                            <!-- JS insertará los puntos -->
-                        </div>
+                        <div id="slider-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2"></div>
                     </div>
+
+                    <!-- Marca de Agua -->
+                    <div class="absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-white border border-white/10 shadow-sm opacity-50 hover:opacity-100 transition-opacity duration-300 cursor-default">
+                        <span class="material-symbols-outlined text-primary text-[16px]">code</span>
+                        <span class="tracking-wide uppercase">Desoftsis</span>
+                    </div>
+                </div>
 
                <!-- Marca de Agua Desoftsis (50% Opacidad) -->
                     <div class="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-white border border-white/10 shadow-sm opacity-50 hover:opacity-100 transition-opacity duration-300 cursor-default">

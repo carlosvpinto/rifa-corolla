@@ -362,6 +362,167 @@ app.post('/api/:raffleId/approve', async (req, res) => {
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+
+// ==========================================
+// 9. MÓDULO SAAS (VENTA DEL SOFTWARE)
+// ==========================================
+
+// Función auxiliar para crear ID limpio (Slug)
+const generateId = (name) => {
+    return name.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-') // Reemplazar caracteres raros por guiones
+        .replace(/(^-|-$)+/g, '') +  // Quitar guiones al inicio/final
+        '-' + Math.floor(Math.random() * 1000); // Aleatorio para unicidad
+};
+
+
+// Función auxiliar para generar PIN de 4 dígitos
+const generatePin = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+// A. MÓDULO SAAS (VENTA DEL SOFTWARE)
+app.post('/api/saas/buy', async (req, res) => {
+    try {
+        const { buyerData, raffleName, paymentRef, amount, paymentDate } = req.body;
+
+        if (!buyerData || !raffleName || !paymentRef) {
+            return res.status(400).json({ error: "Faltan datos de la compra." });
+        }
+
+        // 1. Verificar Pago (A TU CUENTA MAESTRA)
+        const masterCreds = {
+            merchantId: process.env.MERCANTIL_MERCHANT_ID,
+            clientId: process.env.MERCANTIL_CLIENT_ID,
+            secretKey: process.env.MERCANTIL_SECRET_KEY,
+            integratorId: process.env.MERCANTIL_INTEGRATOR_ID,
+            terminalId: process.env.MERCANTIL_TERMINAL_ID,
+            phoneNumber: process.env.MERCANTIL_PHONE_NUMBER
+        };
+
+        const dateToCheck = getVenezuelaDate(paymentDate);
+        
+        const bankResult = await verifyMercantilPayment(
+            masterCreds, buyerData.ci, buyerData.phone, paymentRef, parseFloat(amount), dateToCheck
+        );
+
+        if (!bankResult.success) {
+            return res.status(402).json({ error: "Pago no encontrado en tu cuenta maestra." });
+        }
+
+        // 2. Generar Datos del Nuevo Cliente
+        const newRaffleId = generateId(raffleName);
+        const uniquePin = generatePin(); // <--- PIN ÚNICO GENERADO
+
+        const newConfig = {
+            raffleTitle: raffleName,
+            companyName: buyerData.companyName || raffleName,
+            ownerEmail: buyerData.email,
+            ownerPhone: buyerData.phone,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            totalTickets: 1000, 
+            ticketPrice: 10, 
+            currency: "$", 
+            adminPin: uniquePin, // Guardamos su PIN único
+            isClosed: false, 
+            verificationMode: 'manual', 
+            plan: "SAAS_LICENSE_V1"
+        };
+
+        // 3. Guardar Configuración de la Rifa
+        await RAFFLES_COLLECTION.doc(newRaffleId).collection('config').doc('general').set(newConfig);
+
+        // 4. REGISTRO MAESTRO DE CLIENTES (TU BASE DE DATOS DE VENTAS)
+        // Esto crea una lista aparte solo para ti, con los datos de quien compró
+        await db.collection('saas_customers').doc(newRaffleId).set({
+            clientId: newRaffleId,
+            name: buyerData.name,
+            email: buyerData.email,
+            phone: buyerData.phone,
+            ci: buyerData.ci,
+            initialPin: uniquePin, // Guardamos la clave inicial para soporte
+            paymentRef: paymentRef,
+            amountPaid: amount,
+            purchaseDate: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 5. Correos
+        // ⚠️ CAMBIA ESTO POR TU URL REAL
+        // const APP_URL = "https://rifa-corolla.vercel.app"; 
+      // ... (código previo de la base de datos) ...
+
+        // 5. PREPARAR CORREOS
+        // ⚠️ RECUERDA: Cambia esto a tu URL de producción en Render cuando subas
+        // const APP_URL = "https://rifa-carros-corolla.onrender.com"; 
+        const APP_URL = "http://127.0.0.1:5501"; 
+
+        const clientMailOptions = {
+            from: `Soporte <${process.env.EMAIL_USER}>`,
+            to: buyerData.email,
+            subject: `🚀 Accesos: ${raffleName}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4;">
+                   <div style="background: #fff; padding: 30px; border-radius: 10px; border-top: 5px solid #13ec5b;">
+                      <h1 style="color: #102216; margin-top: 0;">¡Licencia Activada!</h1>
+                      <p>Hola <strong>${buyerData.name}</strong>, tu plataforma está lista.</p>
+                      
+                      <div style="background: #eefbee; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                          <h3 style="margin-top: 0; color: #13ec5b;">🔑 Tus Credenciales</h3>
+                          <p><strong>Panel Administrativo:</strong><br>
+                          <a href="${APP_URL}/admin.html?id=${newRaffleId}">${APP_URL}/admin.html?id=${newRaffleId}</a></p>
+                          
+                          <p><strong>Página de Ventas:</strong><br>
+                          <a href="${APP_URL}/index.html?id=${newRaffleId}">${APP_URL}/index.html?id=${newRaffleId}</a></p>
+                          
+                          <hr style="border: 0; border-top: 1px solid #ccc; margin: 15px 0;">
+                          
+                          <p style="font-size: 16px;"><strong>TU PIN DE ACCESO:</strong> <span style="background: #fff; padding: 5px 10px; border-radius: 4px; font-weight: bold; border: 1px solid #ccc;">${uniquePin}</span></p>
+                      </div>
+
+                      <div style="text-align: center; margin-top: 30px;">
+                          <a href="${APP_URL}/manual.html" style="background-color: #102216; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">📘 Ver Manual de Usuario</a>
+                      </div>
+                   </div>
+                </div>
+            `
+        };
+
+        const adminMailOptions = {
+            from: `Sistema Ventas <${process.env.EMAIL_USER}>`,
+            to: process.env.EMAIL_USER, // Te avisa a ti
+            subject: `💰 NUEVA VENTA SAAS: ${amount}$`,
+            html: `
+                <div style="font-family: Arial;">
+                    <h1>¡Nueva Venta Realizada! 🤑</h1>
+                    <hr>
+                    <p><strong>Cliente:</strong> ${buyerData.name}</p>
+                    <p><strong>Email:</strong> ${buyerData.email}</p>
+                    <p><strong>Teléfono:</strong> ${buyerData.phone}</p>
+                    <p><strong>Monto:</strong> ${amount}$ (Ref: ${paymentRef})</p>
+                    <p><strong>ID Generado:</strong> ${newRaffleId}</p>
+                </div>
+            `
+        };
+        
+        // ENVÍO EN PARALELO (MEJOR RENDIMIENTO)
+        try {
+            console.log("📤 Enviando correos...");
+            await Promise.all([
+                transporter.sendMail(clientMailOptions),
+                transporter.sendMail(adminMailOptions)
+            ]);
+            console.log("✅ Correos enviados.");
+        } catch (mailError) {
+            console.error("❌ Error enviando correos:", mailError);
+            // El flujo continúa aunque el email falle, para no bloquear al cliente
+        }
+
+        res.json({ success: true, redirectUrl: `${APP_URL}/admin.html?id=${newRaffleId}` });
+        
+    } catch (error) {
+        console.error("Error SaaS:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor SaaS corriendo en puerto ${PORT}`);

@@ -46,21 +46,103 @@ const errorModal = document.getElementById('payment-error-modal');
 // ==========================================
 // 3. CARGAR CONFIGURACIÓN DESDE EL SERVIDOR
 // ==========================================
-
+// ==========================================
+// 3. CARGAR CONFIGURACIÓN (CON MANEJO DE ERRORES OFFLINE)
+// ==========================================
 async function loadRaffleConfig() {
-    const loader = document.getElementById('app-loader');
+    const appLoader = document.getElementById('app-loader');
+    const heroLoader = document.getElementById('hero-loader'); 
+    
     try {
+        console.log("⏳ Conectando al servidor...");
+        
+        // Intentamos conectar (Si el servidor está apagado, aquí salta al catch)
         const response = await fetch(CONFIG_URL);
+        
+        if (!response.ok) throw new Error("Servidor respondió con error: " + response.status);
+        
         const data = await response.json();
-        
-        // --- 1. BRANDING (LOGO, ICONO, NOMBRE) ---
-        
-        // A. Nombre de la Empresa (Título de la Pestaña)
-        if (data.companyName) {
-            document.title = data.companyName;
+        console.log("✅ Conexión exitosa:", data);
+
+        // --- SI LLEGAMOS AQUÍ, HAY CONEXIÓN ---
+
+        // A. Verificar estado
+        if (data.isClosed) lockRaffleUI();
+
+        // B. Precios
+        if (data.ticketPrice) {
+            TICKET_PRICE = parseFloat(data.ticketPrice);
+            CURRENCY = data.currency || '$';
+        }
+            
+        // C. Barra de Progreso
+        const totalTickets = parseInt(data.totalTickets) || 100;
+        const manualSold = parseInt(data.manualSold) || 0;
+        updateProgressBar(manualSold, totalTickets);
+
+        // D. Slider
+        if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+            sliderImages = data.images;
+            initSlider(); 
+        } else {
+            // Si conecta pero no hay fotos, quitamos el loader de la imagen
+            if(heroLoader) heroLoader.classList.add('hidden');
         }
 
-        // B. Favicon (Icono de la Pestaña)
+        // E. Textos
+        const titleText = data.raffleTitle || "Gran Rifa";
+        const codeText = data.drawCode || "Sorteo General";
+
+        // Header
+        const headerTitle = document.getElementById('raffle-title-display');
+        const headerCode = document.getElementById('draw-code-display');
+        if(headerTitle) headerTitle.innerText = titleText;
+        if(headerCode) headerCode.innerText = codeText;
+
+        // Hero
+        const heroTitle = document.getElementById('hero-title-display');
+        const heroCode = document.getElementById('hero-code-display');
+        if(heroTitle) heroTitle.innerText = titleText;
+        if(heroCode) heroCode.innerText = codeText;
+
+        // F. Datos Bancarios
+        if (data.bankName) BANK_NAME = data.bankName;
+        if (data.bankCode) BANK_CODE = data.bankCode;
+        if (data.paymentPhone) PAY_PHONE = data.paymentPhone;
+        if (data.paymentCI) PAY_CI = data.paymentCI;
+
+        const bankInfo = document.getElementById('display-bank-info');
+        const phoneDisplay = document.getElementById('display-payment-phone');
+        const ciDisplay = document.getElementById('display-payment-ci');
+        
+        if(bankInfo) bankInfo.innerText = `Pago Móvil ${BANK_NAME} (${BANK_CODE})`;
+        if(phoneDisplay) phoneDisplay.innerText = PAY_PHONE;
+        if(ciDisplay) ciDisplay.innerText = PAY_CI;
+
+        const btnPhone = document.getElementById('btn-copy-phone');
+        const btnCi = document.getElementById('btn-copy-ci');
+        
+        if(btnPhone) {
+            const newBtn = btnPhone.cloneNode(true);
+            btnPhone.parentNode.replaceChild(newBtn, btnPhone);
+            newBtn.onclick = (e) => { e.preventDefault(); window.copiar(PAY_PHONE); };
+        }
+        if(btnCi) {
+            const newBtn = btnCi.cloneNode(true);
+            btnCi.parentNode.replaceChild(newBtn, btnCi);
+            newBtn.onclick = (e) => { e.preventDefault(); window.copiar(PAY_CI); };
+        }
+
+        // G. Branding
+        if (data.logoUrl) {
+            const logoImg = document.getElementById('custom-logo-img');
+            const defaultIcon = document.getElementById('default-logo-icon');
+            if (logoImg && defaultIcon) {
+                logoImg.src = data.logoUrl;
+                logoImg.classList.remove('hidden');
+                defaultIcon.classList.add('hidden');
+            }
+        }
         if (data.faviconUrl) {
             let link = document.querySelector("link[rel*='icon']");
             if (!link) {
@@ -70,78 +152,39 @@ async function loadRaffleConfig() {
             }
             link.href = data.faviconUrl;
         }
+        if (data.companyName) document.title = data.companyName;
 
-        // C. Logo Visual (Header)
-        if (data.logoUrl) {
-            const logoImg = document.getElementById('custom-logo-img');
-            const defaultIcon = document.getElementById('default-logo-icon');
-            if (logoImg && defaultIcon) {
-                logoImg.src = data.logoUrl;
-                logoImg.classList.remove('hidden'); // Mostrar imagen
-                defaultIcon.classList.add('hidden'); // Ocultar icono por defecto
-            }
-        }
+        updateUI(); 
 
-        // --- 2. CONFIGURACIÓN DEL SORTEO ---
-
-        // Textos del Sorteo
-        const companyText = data.companyName || "Tu Empresa";
-        const raffleText = data.raffleTitle || "Gran Rifa";
-        const codeText = data.drawCode || "Sorteo General";
-
-        // Header: Muestra Nombre de Empresa
-        const headerTitle = document.getElementById('raffle-title-display');
-        const headerCode = document.getElementById('draw-code-display');
-        if(headerTitle) headerTitle.innerText = companyText; 
-        if(headerCode) headerCode.innerText = codeText;
-
-        // Hero: Muestra Nombre de Rifa
-        const heroTitle = document.getElementById('hero-title-display');
-        const heroCode = document.getElementById('hero-code-display');
-        if(heroTitle) heroTitle.innerText = raffleText;
-        if(heroCode) heroCode.innerText = codeText;
-
-
-        // --- 3. ESTADO Y PRECIOS ---
-
-        if (data.isClosed) lockRaffleUI();
-
-        if (data.ticketPrice) {
-            TICKET_PRICE = parseFloat(data.ticketPrice);
-            CURRENCY = data.currency || '$';
-            
-            const totalTickets = parseInt(data.totalTickets) || 100;
-            const manualSold = parseInt(data.manualSold) || 0;
-            updateProgressBar(manualSold, totalTickets);
-
-            if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-                sliderImages = data.images;
-                initSlider(); 
-            }
-            
-            // Datos Bancarios
-            if (data.bankName) BANK_NAME = data.bankName;
-            if (data.bankCode) BANK_CODE = data.bankCode;
-            if (data.paymentPhone) PAY_PHONE = data.paymentPhone;
-            if (data.paymentCI) PAY_CI = data.paymentCI;
-
-            // Actualizar textos bancarios
-            const bankInfo = document.getElementById('display-bank-info');
-            const phoneDisplay = document.getElementById('display-payment-phone');
-            const ciDisplay = document.getElementById('display-payment-ci');
-            
-            if(bankInfo) bankInfo.innerText = `Pago Móvil ${BANK_NAME} (${BANK_CODE})`;
-            if(phoneDisplay) phoneDisplay.innerText = PAY_PHONE;
-            if(ciDisplay) ciDisplay.innerText = PAY_CI;
-
-            updateUI(); 
-        }
     } catch (error) {
-        console.error("Error cargando configuración:", error);
+        console.error("❌ ERROR DE CONEXIÓN:", error);
+        
+        // MODO "OFFLINE":
+        // 1. Mostrar un mensaje flotante (Toast)
+        // Opcional: showToast("Error de conexión con el servidor", "error");
+
+        // 2. Modificar el Hero Loader para mostrar error en lugar de cargar infinito
+        if(heroLoader) {
+            heroLoader.innerHTML = `
+                <div class="text-center p-4">
+                    <span class="material-symbols-outlined text-4xl text-red-500 mb-2">wifi_off</span>
+                    <p class="text-xs text-red-400 font-bold tracking-widest">SIN CONEXIÓN</p>
+                    <p class="text-[10px] text-gray-500 mt-1">Verifica tu internet o el servidor.</p>
+                </div>
+            `;
+            heroLoader.classList.remove('animate-pulse'); // Dejar de parpadear
+        }
+
+        // 3. Poner textos por defecto en la UI para que no se vea rota
+        if(unitPriceDisplay) unitPriceDisplay.innerText = "--";
+        if(modalTotal) modalTotal.innerText = "Error";
+
     } finally {
-        if (loader) {
-            loader.classList.add('opacity-0');
-            setTimeout(() => loader.classList.add('hidden'), 500);
+        // --- ESTO SE EJECUTA SIEMPRE (ÉXITO O ERROR) ---
+        // Quitamos la pantalla negra de carga
+        if (appLoader) {
+            appLoader.classList.add('opacity-0');
+            setTimeout(() => appLoader.classList.add('hidden'), 500);
         }
     }
 }
@@ -203,13 +246,25 @@ window.resetQuantity = () => {
 // ==========================================
 // 5. SLIDER
 // ==========================================
+// ==========================================
+// 5. SLIDER (MEJORADO CON PRELOADER)
+// ==========================================
 function initSlider() {
     const imgElement = document.getElementById('hero-image');
+    const loader = document.getElementById('hero-loader'); 
     const controls = document.getElementById('slider-controls');
     const dotsContainer = document.getElementById('slider-dots');
 
     if(!imgElement) return;
-    imgElement.src = sliderImages[0];
+
+    // SEGURIDAD: Si no hay imágenes, ocultar loader y mostrar algo por defecto (o dejar vacío)
+    if (!sliderImages || sliderImages.length === 0) {
+        if(loader) loader.classList.add('hidden'); // Quitar cargador para que no estorbe
+        return;
+    }
+
+    // Cargar primera imagen
+    loadImageSmoothly(imgElement, loader, sliderImages[0]);
 
     if (sliderImages.length > 1) {
         controls.classList.remove('hidden');
@@ -223,16 +278,47 @@ function initSlider() {
     }
 }
 
+// Función auxiliar para cargar imagen sin parpadeos
+function loadImageSmoothly(imgEl, loaderEl, url) {
+    // 1. Ocultar imagen actual (si hay)
+    imgEl.style.opacity = 0;
+    
+    // 2. Mostrar loader si tarda mucho (opcional, aquí lo dejamos visible por css si la img es transparente)
+    if(loaderEl) loaderEl.classList.remove('hidden');
+
+    // 3. Crear objeto imagen en memoria para descargar antes de mostrar
+    const tempImg = new Image();
+    tempImg.src = url;
+    
+    tempImg.onload = () => {
+        // Cuando ya descargó:
+        imgEl.src = url; // Asignamos al elemento real
+        
+        // Pequeño delay para asegurar renderizado
+        setTimeout(() => {
+            if(loaderEl) loaderEl.classList.add('hidden'); // Quitar loader
+            imgEl.style.opacity = 1; // Aparecer imagen suavemente
+        }, 100);
+    };
+}
+
 function showSlide(index) {
     const imgElement = document.getElementById('hero-image');
     const dots = document.getElementById('slider-dots').children;
+    
+    // Simplemente cambiamos el src, la transición CSS opacity hará el resto si quisiéramos,
+    // pero para slider rápido mejor cambio directo:
     imgElement.style.opacity = 0;
+    
     setTimeout(() => {
         imgElement.src = sliderImages[index];
         imgElement.style.opacity = 1;
+        
+        // Actualizar puntos
         for (let dot of dots) dot.classList.replace('bg-primary', 'bg-white/50');
         dots[index].classList.replace('bg-white/50', 'bg-primary');
-    }, 150);
+    }, 200);
+
     currentSlide = index;
 }
 

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crea tu Rifa Digital - Software Automático</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#13ec5b", "background-dark": "#102216", "surface-dark": "#1c271f" },
+                    fontFamily: { "display": ["Plus Jakarta Sans", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-dark font-display text-white">
+
+    <!-- Hero Section -->
+    <header class="container mx-auto px-6 py-16 text-center">
+        <div class="inline-block p-3 rounded-full bg-primary/10 text-primary mb-6 animate-bounce">
+            <span class="material-symbols-outlined text-4xl">rocket_launch</span>
+        </div>
+        <h1 class="text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
+            Lanza tu Rifa Digital<br><span class="text-primary">En Menos de 5 Minutos</span>
+        </h1>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
+            El software más avanzado con verificación automática de Pago Móvil, sorteos en vivo y gestión de tickets. Sin programar nada.
+        </p>
+        <button onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(19,236,91,0.4)]">
+            Obtener Licencia por $50
+        </button>
+    </header>
+
+    <!-- Features -->
+    <section class="container mx-auto px-6 py-12 grid md:grid-cols-3 gap-8">
+        <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
+            <span class="material-symbols-outlined text-primary text-4xl mb-4">verified_user</span>
+            <h3 class="text-xl font-bold mb-2">Pagos Automáticos</h3>
+            <p class="text-gray-400">Conexión directa con Banco Mercantil. Verifica transferencias en segundos sin intervención humana.</p>
+        </div>
+        <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
+            <span class="material-symbols-outlined text-primary text-4xl mb-4">dashboard</span>
+            <h3 class="text-xl font-bold mb-2">Panel de Control</h3>
+            <p class="text-gray-400">Administra tus ventas, cambia precios, sube fotos y realiza sorteos desde tu celular o PC.</p>
+        </div>
+        <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
+            <span class="material-symbols-outlined text-primary text-4xl mb-4">qr_code_2</span>
+            <h3 class="text-xl font-bold mb-2">Tickets con QR</h3>
+            <p class="text-gray-400">Tus clientes reciben un boleto digital profesional por correo con código QR único.</p>
+        </div>
+    </section>
+
+    <!-- Modal de Compra -->
+    <div id="purchase-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closePurchaseModal()"></div>
+        <div class="relative w-full max-w-md bg-surface-dark rounded-2xl p-8 shadow-2xl border border-primary/20">
+            <h2 class="text-2xl font-bold mb-1">Activa tu Software</h2>
+            <p class="text-gray-400 text-sm mb-6">Realiza el pago de <strong>$50 (Bs. Cambio del día)</strong> a los datos indicados.</p>
+
+            <div class="bg-black/30 p-4 rounded-lg mb-6 text-sm border border-white/10">
+                <p class="text-gray-400">Pago Móvil:</p>
+                <p class="font-mono text-white">0105 - 0424.345.4032 - J-506818817</p>
+                <p class="font-mono text-primary mt-1 font-bold">Monto: $50.00</p>
+            </div>
+
+            <form id="saas-form" class="space-y-4">
+                <input type="text" id="buyer-name" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Tu Nombre Completo">
+                 <div class="pt-2">
+                    <label class="text-xs text-gray-400 uppercase font-bold">Fecha del Pago</label>
+                    <input type="date" id="payment-date" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="tel" id="buyer-ci" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Cédula (V123...)">
+                    <input type="tel" id="buyer-phone" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Teléfono">
+                </div>
+                <input type="email" id="buyer-email" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Tu Correo (Aquí llegarán los accesos)">
+                
+                <hr class="border-white/10">
+                
+                <input type="text" id="raffle-name" required class="w-full bg-primary/10 border border-primary/30 rounded-lg p-3 text-white focus:border-primary outline-none font-bold" placeholder="Nombre de tu Rifa (Ej: Gran Sorteo 2026)">
+                
+                <div class="pt-2">
+                    <label class="text-xs text-gray-400 uppercase font-bold">Referencia de Pago</label>
+                    <input type="tel" id="payment-ref" required maxlength="6" class="w-full bg-black/30 border border-primary/50 rounded-lg p-3 text-white focus:border-primary outline-none text-center font-mono text-lg tracking-widest" placeholder="123456">
+                </div>
+
+                <button type="submit" class="w-full bg-primary hover:bg-green-400 text-background-dark font-bold py-4 rounded-xl transition-all shadow-lg mt-2">
+                    VERIFICAR Y ACTIVAR
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="landing.js"></script>
+</body>
+</html>

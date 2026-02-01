@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual de Usuario - Plataforma de Rifas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#13ec5b", "background-dark": "#102216", "surface-dark": "#1c271f" }, fontFamily: { "display": ["Plus Jakarta Sans", "sans-serif"] } } } }
+    </script>
+</head>
+<body class="bg-background-dark font-display text-white">
+
+    <div class="max-w-4xl mx-auto p-6 md:p-12">
+        
+        <header class="mb-12 border-b border-white/10 pb-8">
+            <h1 class="text-4xl font-bold text-primary mb-2">Manual de Usuario</h1>
+            <p class="text-gray-400">Guía completa para administrar tu Rifa Digital.</p>
+        </header>
+
+        <div class="space-y-12">
+            
+            <!-- 1. Primeros Pasos -->
+            <section>
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-outlined text-primary text-3xl">login</span>
+                    <h2 class="text-2xl font-bold">1. Primer Ingreso</h2>
+                </div>
+                <div class="bg-surface-dark p-6 rounded-xl border border-white/5">
+                    <p class="mb-4">Para entrar a tu panel de control, utiliza el enlace <strong>Admin</strong> que recibiste por correo.</p>
+                    <ul class="list-disc ml-5 space-y-2 text-gray-300">
+                        <li>El sistema te pedirá un <strong>PIN de Seguridad</strong>.</li>
+                        <li>Usa el PIN único que se te envió en el correo de bienvenida.</li>
+                        <li><strong>Recomendación:</strong> Cambia este PIN inmediatamente en el menú de seguridad.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 2. Configuración -->
+            <section>
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-outlined text-primary text-3xl">settings</span>
+                    <h2 class="text-2xl font-bold">2. Configuración de la Rifa</h2>
+                </div>
+                <div class="bg-surface-dark p-6 rounded-xl border border-white/5">
+                    <p class="mb-4">En el panel principal encontrarás las opciones para personalizar tu sorteo:</p>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="bg-black/20 p-4 rounded-lg">
+                            <h4 class="font-bold text-primary mb-1">Datos Generales</h4>
+                            <p class="text-sm text-gray-400">Define el nombre del sorteo, precio del ticket, moneda y cantidad total de números.</p>
+                        </div>
+                        <div class="bg-black/20 p-4 rounded-lg">
+                            <h4 class="font-bold text-primary mb-1">Datos Bancarios</h4>
+                            <p class="text-sm text-gray-400">Ingresa los datos del Pago Móvil donde tus clientes realizarán la transferencia.</p>
+                        </div>
+                        <div class="bg-black/20 p-4 rounded-lg">
+                            <h4 class="font-bold text-primary mb-1">Galería</h4>
+                            <p class="text-sm text-gray-400">Sube fotos de tu premio. El sistema las optimiza automáticamente.</p>
+                        </div>
+                         <div class="bg-black/20 p-4 rounded-lg">
+                            <h4 class="font-bold text-primary mb-1">Marca</h4>
+                            <p class="text-sm text-gray-400">En el menú superior, usa "Personalizar Marca" para subir tu Logo.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Gestión de Ventas -->
+            <section>
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-outlined text-primary text-3xl">payments</span>
+                    <h2 class="text-2xl font-bold">3. Gestión de Ventas</h2>
+                </div>
+                <div class="bg-surface-dark p-6 rounded-xl border border-white/5 space-y-4">
+                    <h3 class="font-bold text-white">Modo Automático vs Manual</h3>
+                    <p class="text-gray-300">Puedes cambiar el modo de verificación en el panel:</p>
+                    <ul class="list-disc ml-5 space-y-2 text-gray-300 text-sm">
+                        <li><strong>Automático:</strong> El sistema se conecta con el Banco Mercantil (requiere credenciales API) y aprueba solo si el dinero está en cuenta.</li>
+                        <li><strong>Manual:</strong> El sistema recibe el reporte y lo deja en estado "Pendiente" (Reloj Naranja). Tú debes verificar en tu banco y hacer clic en el botón <strong>VALIDAR</strong> para aprobarlo.</li>
+                    </ul>
+                    <div class="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-lg mt-2">
+                        <p class="text-yellow-200 text-sm"><strong>Nota:</strong> Al aprobar un pago, el cliente recibe automáticamente un correo con su Boleto y Código QR.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 4. Sorteo -->
+            <section>
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-outlined text-primary text-3xl">emoji_events</span>
+                    <h2 class="text-2xl font-bold">4. Realizar Sorteo</h2>
+                </div>
+                <div class="bg-surface-dark p-6 rounded-xl border border-white/5">
+                    <p class="text-gray-300">Haz clic en el ícono de la <strong>Copa (🏆)</strong> en el encabezado.</p>
+                    <ul class="list-disc ml-5 mt-2 space-y-2 text-gray-300">
+                        <li><strong>Búsqueda Manual:</strong> Si usas una lotería externa (ej. Triple Táchira), escribe el número ganador para ver quién lo tiene.</li>
+                        <li><strong>Aleatorio:</strong> El sistema elegirá al azar uno de los tickets vendidos.</li>
+                    </ul>
+                </div>
+            </section>
+
+        </div>
+        
+        <footer class="mt-12 pt-8 border-t border-white/10 text-center text-gray-500 text-sm">
+            &copy; 2026 Plataforma de Rifas SaaS. Todos los derechos reservados.
+        </footer>
+    </div>
+</body>
+</html>
