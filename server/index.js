@@ -158,6 +158,63 @@ async function verifyMercantilPayment(creds, userCi, userPhone, refNumber, rawAm
 
 app.get('/', (req, res) => res.send('API SaaS Rifa - Activa 🚀'));
 
+// ==========================================
+// A. MASTER ADMIN (SUPER USUARIO)
+// ⚠️ ESTO DEBE IR ANTES DE CUALQUIER RUTA /:raffleId
+// ==========================================
+
+// 1. Guardar Configuración Global (Precio del Software, Tu Banco)
+app.post('/api/master/config', async (req, res) => {
+    try {
+        const { softwarePrice, masterPin, bankInfo } = req.body;
+        const updateData = {};
+        
+        if (softwarePrice) updateData.softwarePrice = parseFloat(softwarePrice);
+        if (masterPin) updateData.masterPin = masterPin;
+        if (bankInfo) updateData.bankInfo = bankInfo;
+
+        // Guardamos en la colección 'settings', documento 'saas_master'
+        await db.collection('settings').doc('saas_master').set(updateData, { merge: true });
+        
+        res.json({ success: true, message: "Configuración Maestra Guardada" });
+    } catch(e) { 
+        console.error(e);
+        res.status(500).json({ error: e.message }); 
+    }
+});
+
+// 2. Leer Configuración Global (Para el Landing y Master.html)
+app.get('/api/master/config', async (req, res) => {
+    try {
+        const doc = await db.collection('settings').doc('saas_master').get();
+        // Si no existe, devolvemos defaults
+        if (!doc.exists) return res.json({ softwarePrice: 50, masterPin: "0000" });
+        res.json(doc.data());
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// 3. Login Maestro
+app.post('/api/master/login', async (req, res) => {
+    try {
+        const { pin } = req.body;
+        const doc = await db.collection('settings').doc('saas_master').get();
+        const realPin = doc.exists ? (doc.data().masterPin || "0000") : "0000";
+        
+        if (pin === realPin) res.json({ success: true });
+        else res.status(401).json({ error: "Acceso Denegado" });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// 4. Ver Lista de Clientes (Tus Ventas)
+app.get('/api/master/customers', async (req, res) => {
+    try {
+        const snapshot = await db.collection('saas_customers').orderBy('purchaseDate', 'desc').get();
+        let customers = [];
+        snapshot.forEach(doc => customers.push(doc.data()));
+        res.json(customers);
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // LOGIN ADMIN (Por Cliente)
 app.post('/api/:raffleId/admin/login', async (req, res) => {
     try {
@@ -516,12 +573,16 @@ app.post('/api/saas/buy', async (req, res) => {
         }
 
         res.json({ success: true, redirectUrl: `${APP_URL}/admin.html?id=${newRaffleId}` });
-        
+
     } catch (error) {
         console.error("Error SaaS:", error);
         res.status(500).json({ error: error.message });
     }
 });
+
+// ==========================================
+// 10. MÓDULO SUPER ADMIN (TU CONTROL)
+// ==========================================
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

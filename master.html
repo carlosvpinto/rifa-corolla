@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Master Admin - SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "master": "#8b5cf6", "background-dark": "#0f0518", "surface-dark": "#1a0b2e" }, // Tema Púrpura
+                    fontFamily: { "display": ["Plus Jakarta Sans", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-dark font-display text-white h-screen flex flex-col">
+
+    <!-- LOGIN -->
+    <div id="login-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl">
+        <div class="bg-surface-dark p-8 rounded-2xl border border-master/30 w-full max-w-sm text-center">
+            <span class="material-symbols-outlined text-4xl text-master mb-4">diamond</span>
+            <h2 class="text-2xl font-bold mb-4">Acceso Maestro</h2>
+            <form id="login-form" class="space-y-4">
+                <input type="password" id="master-pin" class="w-full bg-black/50 border border-white/20 rounded-lg p-3 text-center text-2xl tracking-[0.5em] focus:border-master outline-none" placeholder="••••" required>
+                <button type="submit" class="w-full bg-master text-white font-bold py-3 rounded-lg hover:bg-purple-500">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="flex-1 overflow-hidden hidden flex flex-col">
+        <header class="h-16 border-b border-white/10 bg-surface-dark px-6 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-master">
+                <span class="material-symbols-outlined">rocket_launch</span>
+                <h1 class="font-bold">SUPER ADMIN</h1>
+            </div>
+            <button onclick="logout()" class="text-sm text-red-400 hover:text-white">Salir</button>
+        </header>
+
+        <main class="flex-1 overflow-auto p-6 max-w-6xl mx-auto w-full space-y-6">
+            
+            <!-- Estadísticas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-surface-dark p-6 rounded-2xl border border-white/5">
+                    <p class="text-gray-400 text-xs uppercase font-bold">Ganancias Totales</p>
+                    <h2 class="text-4xl font-bold text-green-400 mt-2">$<span id="total-revenue">0.00</span></h2>
+                </div>
+                <div class="bg-surface-dark p-6 rounded-2xl border border-white/5">
+                    <p class="text-gray-400 text-xs uppercase font-bold">Licencias Vendidas</p>
+                    <h2 class="text-4xl font-bold text-white mt-2" id="total-clients">0</h2>
+                </div>
+            </div>
+
+            <!-- Configuración Global (Tus Precios) -->
+            <div class="bg-surface-dark p-6 rounded-2xl border border-master/20">
+                <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-master">settings</span> Configurar mi Negocio</h3>
+                <div class="grid md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Precio del Software ($)</label>
+                        <input type="number" id="software-price" class="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white focus:border-master outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">PIN Maestro (Acceso)</label>
+                        <input type="text" id="master-pin-setting" class="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white focus:border-master outline-none">
+                    </div>
+                    <button onclick="saveMasterConfig()" class="bg-master hover:bg-purple-500 text-white font-bold py-2.5 rounded-lg transition-colors">Guardar Cambios</button>
+                </div>
+            </div>
+
+            <!-- Tabla de Clientes -->
+            <div class="bg-surface-dark rounded-2xl border border-white/5 overflow-hidden">
+                <div class="p-4 border-b border-white/5 bg-black/20"><h3 class="font-bold text-sm">Historial de Ventas</h3></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-gray-500 uppercase text-[10px] bg-white/5">
+                            <tr><th class="p-3">Fecha</th><th class="p-3">Cliente</th><th class="p-3">Contacto</th><th class="p-3">ID Rifa</th><th class="p-3 text-right">Pago</th></tr>
+                        </thead>
+                        <tbody id="customers-table" class="divide-y divide-white/5 text-gray-300"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="master.js"></script>
+</body>
+</html>
