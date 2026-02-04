@@ -28,6 +28,8 @@ let sliderImages = [];
 let currentSlide = 0;
 let slideInterval;
 
+let EXCHANGE_RATE = 0; // Tasa del día
+
 // ==========================================
 // 2. ELEMENTOS DEL DOM
 // ==========================================
@@ -49,6 +51,9 @@ const errorModal = document.getElementById('payment-error-modal');
 // ==========================================
 // 3. CARGAR CONFIGURACIÓN (CON MANEJO DE ERRORES OFFLINE)
 // ==========================================
+// ==========================================
+// 3. CARGAR CONFIGURACIÓN + TASA DE CAMBIO
+// ==========================================
 async function loadRaffleConfig() {
     const appLoader = document.getElementById('app-loader');
     const heroLoader = document.getElementById('hero-loader'); 
@@ -56,31 +61,45 @@ async function loadRaffleConfig() {
     try {
         console.log("⏳ Conectando al servidor...");
         
-        // Intentamos conectar (Si el servidor está apagado, aquí salta al catch)
+        // 1. OBTENER CONFIGURACIÓN DE LA RIFA
         const response = await fetch(CONFIG_URL);
-        
         if (!response.ok) throw new Error("Servidor respondió con error: " + response.status);
-        
         const data = await response.json();
-        console.log("✅ Conexión exitosa:", data);
+        
+        console.log("✅ Configuración cargada:", data);
 
-        // --- SI LLEGAMOS AQUÍ, HAY CONEXIÓN ---
+        // 2. OBTENER TASA DE CAMBIO (NUEVO)
+        // Usamos la BASE_API definida al inicio del archivo
+        try {
+            const rateResponse = await fetch(`${BASE_API}/tasa`);
+            const rateData = await rateResponse.json();
+            
+            if (rateData.rate) {
+                EXCHANGE_RATE = parseFloat(rateData.rate);
+                console.log("💵 Tasa del día cargada:", EXCHANGE_RATE);
+            } else {
+                console.warn("⚠️ No se recibió tasa, usando 0.");
+            }
+        } catch (rateError) {
+            console.error("Error obteniendo tasa:", rateError);
+            // No detenemos la app, solo no mostrará Bs.
+        }
 
-        // A. Verificar estado
+        // --- A. VERIFICAR ESTADO ---
         if (data.isClosed) lockRaffleUI();
 
-        // B. Precios
+        // --- B. PRECIOS Y MONEDA ---
         if (data.ticketPrice) {
             TICKET_PRICE = parseFloat(data.ticketPrice);
             CURRENCY = data.currency || '$';
         }
             
-        // C. Barra de Progreso
+        // --- C. BARRA DE PROGRESO ---
         const totalTickets = parseInt(data.totalTickets) || 100;
         const manualSold = parseInt(data.manualSold) || 0;
         updateProgressBar(manualSold, totalTickets);
 
-        // D. Slider
+        // --- D. SLIDER DE IMÁGENES ---
         if (data.images && Array.isArray(data.images) && data.images.length > 0) {
             sliderImages = data.images;
             initSlider(); 
@@ -89,23 +108,23 @@ async function loadRaffleConfig() {
             if(heroLoader) heroLoader.classList.add('hidden');
         }
 
-        // E. Textos
+        // --- E. TEXTOS (TÍTULO Y CÓDIGO) ---
         const titleText = data.raffleTitle || "Gran Rifa";
         const codeText = data.drawCode || "Sorteo General";
 
-        // Header
+        // Actualizar Header
         const headerTitle = document.getElementById('raffle-title-display');
         const headerCode = document.getElementById('draw-code-display');
         if(headerTitle) headerTitle.innerText = titleText;
         if(headerCode) headerCode.innerText = codeText;
 
-        // Hero
+        // Actualizar Hero
         const heroTitle = document.getElementById('hero-title-display');
         const heroCode = document.getElementById('hero-code-display');
         if(heroTitle) heroTitle.innerText = titleText;
         if(heroCode) heroCode.innerText = codeText;
 
-        // F. Datos Bancarios
+        // --- F. DATOS BANCARIOS ---
         if (data.bankName) BANK_NAME = data.bankName;
         if (data.bankCode) BANK_CODE = data.bankCode;
         if (data.paymentPhone) PAY_PHONE = data.paymentPhone;
@@ -123,7 +142,7 @@ async function loadRaffleConfig() {
         const btnCi = document.getElementById('btn-copy-ci');
         
         if(btnPhone) {
-            const newBtn = btnPhone.cloneNode(true);
+            const newBtn = btnPhone.cloneNode(true); // Clonar para limpiar eventos
             btnPhone.parentNode.replaceChild(newBtn, btnPhone);
             newBtn.onclick = (e) => { e.preventDefault(); window.copiar(PAY_PHONE); };
         }
@@ -133,7 +152,7 @@ async function loadRaffleConfig() {
             newBtn.onclick = (e) => { e.preventDefault(); window.copiar(PAY_CI); };
         }
 
-        // G. Branding
+        // --- G. BRANDING ---
         if (data.logoUrl) {
             const logoImg = document.getElementById('custom-logo-img');
             const defaultIcon = document.getElementById('default-logo-icon');
@@ -154,34 +173,26 @@ async function loadRaffleConfig() {
         }
         if (data.companyName) document.title = data.companyName;
 
+        // Actualizar UI con el precio y la tasa cargada
         updateUI(); 
 
     } catch (error) {
         console.error("❌ ERROR DE CONEXIÓN:", error);
         
-        // MODO "OFFLINE":
-        // 1. Mostrar un mensaje flotante (Toast)
-        // Opcional: showToast("Error de conexión con el servidor", "error");
-
-        // 2. Modificar el Hero Loader para mostrar error en lugar de cargar infinito
+        // MODO "OFFLINE" - Fallback visual
         if(heroLoader) {
             heroLoader.innerHTML = `
                 <div class="text-center p-4">
                     <span class="material-symbols-outlined text-4xl text-red-500 mb-2">wifi_off</span>
                     <p class="text-xs text-red-400 font-bold tracking-widest">SIN CONEXIÓN</p>
-                    <p class="text-[10px] text-gray-500 mt-1">Verifica tu internet o el servidor.</p>
                 </div>
             `;
-            heroLoader.classList.remove('animate-pulse'); // Dejar de parpadear
+            heroLoader.classList.remove('animate-pulse');
         }
-
-        // 3. Poner textos por defecto en la UI para que no se vea rota
         if(unitPriceDisplay) unitPriceDisplay.innerText = "--";
-        if(modalTotal) modalTotal.innerText = "Error";
 
     } finally {
-        // --- ESTO SE EJECUTA SIEMPRE (ÉXITO O ERROR) ---
-        // Quitamos la pantalla negra de carga
+        // Siempre quitar pantalla de carga
         if (appLoader) {
             appLoader.classList.add('opacity-0');
             setTimeout(() => appLoader.classList.add('hidden'), 500);
@@ -209,14 +220,22 @@ function lockRaffleUI() {
 // ==========================================
 function updateUI() {
     qtyDisplay.innerText = quantity;
-    const total = (quantity * TICKET_PRICE).toFixed(2);
-    const totalString = `${CURRENCY} ${total}`;
     
-    totalDisplay.innerText = totalString;
-    modalTotal.innerText = totalString;
+    // 🔴 CÁLCULO DUAL
+    const totalUSD = quantity * TICKET_PRICE;
+    // Si la tasa cargó, calculamos Bs, si no, mostramos solo $
+    const totalVES = EXCHANGE_RATE > 0 ? (totalUSD * EXCHANGE_RATE).toFixed(2) : "...";
+    
+    // Mostrar: "$10 (Bs. 500.00)"
+    const textTotal = `$${totalUSD} (Bs. ${totalVES})`;
 
-    if (unitPriceDisplay) {
-        unitPriceDisplay.innerText = `${CURRENCY} ${TICKET_PRICE.toFixed(2)}`;
+    totalDisplay.innerText = textTotal;
+    if (typeof modalTotal !== 'undefined') modalTotal.innerText = textTotal;
+
+    // Actualizar precio unitario en la tarjeta
+    if (typeof unitPriceDisplay !== 'undefined') {
+        const unitVES = EXCHANGE_RATE > 0 ? (TICKET_PRICE * EXCHANGE_RATE).toFixed(2) : "...";
+        unitPriceDisplay.innerHTML = `$${TICKET_PRICE}<br><span style="font-size:0.6em; color:#ccc">Bs. ${unitVES}</span>`;
     }
 
     if (quantity <= 1) btnMinus.classList.add('opacity-50', 'cursor-not-allowed');

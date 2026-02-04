@@ -21,7 +21,7 @@
 </head>
 <body class="bg-background-dark font-display text-white">
 
-    <!-- Hero Section -->
+    <!-- Hero Section (Lo único visible al entrar) -->
     <header class="container mx-auto px-6 py-16 text-center">
         <div class="inline-block p-3 rounded-full bg-primary/10 text-primary mb-6 animate-bounce">
             <span class="material-symbols-outlined text-4xl">rocket_launch</span>
@@ -32,8 +32,10 @@
         <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
             El software más avanzado con verificación automática de Pago Móvil, sorteos en vivo y gestión de tickets. Sin programar nada.
         </p>
-       <button id="btn-buy-license" onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(19,236,91,0.4)]">
-            Obtener Licencia por $50
+        
+        <!-- BOTÓN QUE ABRE LA VENTANA -->
+        <button id="btn-buy-license" onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(19,236,91,0.4)]">
+            Obtener Licencia por $--
         </button>
     </header>
 
@@ -42,12 +44,12 @@
         <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
             <span class="material-symbols-outlined text-primary text-4xl mb-4">verified_user</span>
             <h3 class="text-xl font-bold mb-2">Pagos Automáticos</h3>
-            <p class="text-gray-400">Conexión directa con Banco Mercantil. Verifica transferencias en segundos sin intervención humana.</p>
+            <p class="text-gray-400">Conexión directa con Banco Mercantil. Verifica transferencias en segundos.</p>
         </div>
         <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
             <span class="material-symbols-outlined text-primary text-4xl mb-4">dashboard</span>
             <h3 class="text-xl font-bold mb-2">Panel de Control</h3>
-            <p class="text-gray-400">Administra tus ventas, cambia precios, sube fotos y realiza sorteos desde tu celular o PC.</p>
+            <p class="text-gray-400">Administra tus ventas, cambia precios, sube fotos y realiza sorteos desde tu celular.</p>
         </div>
         <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
             <span class="material-symbols-outlined text-primary text-4xl mb-4">qr_code_2</span>
@@ -56,25 +58,85 @@
         </div>
     </section>
 
-    <!-- Modal de Compra -->
+    <!-- ========================================== -->
+    <!-- VENTANA MODAL (OCULTA POR DEFECTO 'hidden') -->
+    <!-- ========================================== -->
     <div id="purchase-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        
+        <!-- Fondo Oscuro (Click para cerrar) -->
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closePurchaseModal()"></div>
-        <div class="relative w-full max-w-md bg-surface-dark rounded-2xl p-8 shadow-2xl border border-primary/20">
-            <h2 class="text-2xl font-bold mb-1">Activa tu Software</h2>
-            <p class="text-gray-400 text-sm mb-6">Realiza el pago de <strong>$50 (Bs. Cambio del día)</strong> a los datos indicados.</p>
+        
+        <!-- Contenido de la Ventana -->
+        <div class="relative w-full max-w-md bg-surface-dark rounded-2xl p-8 shadow-2xl border border-primary/20 max-h-[90vh] overflow-y-auto">
+            
+            <!-- Botón Cerrar (X) -->
+            <button onclick="closePurchaseModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
 
-            <div class="bg-black/30 p-4 rounded-lg mb-6 text-sm border border-white/10">
-                <p class="text-gray-400">Pago Móvil:</p>
-                <p class="font-mono text-white">0105 - 0424.345.4032 - J-506818817</p>
-                <p class="font-mono text-primary mt-1 font-bold">Monto: $50.00</p>
+            <h2 class="text-2xl font-bold mb-1">Activa tu Software</h2>
+            <p class="text-gray-400 text-sm mb-6">Realiza el pago a los datos indicados a continuación.</p>
+
+            <!-- SECCIÓN DE DATOS BANCARIOS (CON BOTONES DE COPIAR) -->
+            <div class="bg-black/40 p-5 rounded-xl border border-primary/20 mb-6">
+                <div class="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
+                    <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+                    <h4 class="text-sm font-bold text-white uppercase tracking-wider">Datos para el Pago</h4>
+                </div>
+
+                <div class="space-y-3 text-sm">
+                    <!-- Banco -->
+                    <div class="flex justify-between items-center group">
+                        <div class="text-gray-400">Banco:</div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-white font-bold">0105 (Mercantil)</span>
+                            <button onclick="copyText('0105', this)" class="text-gray-500 hover:text-primary transition-colors p-1 rounded-md hover:bg-white/5" title="Copiar Banco">
+                                <span class="material-symbols-outlined text-lg">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Teléfono -->
+                    <div class="flex justify-between items-center group">
+                        <div class="text-gray-400">Teléfono:</div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-white font-bold">0424-3454032</span>
+                            <button onclick="copyText('04243454032', this)" class="text-gray-500 hover:text-primary transition-colors p-1 rounded-md hover:bg-white/5" title="Copiar Teléfono">
+                                <span class="material-symbols-outlined text-lg">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- RIF -->
+                    <div class="flex justify-between items-center group">
+                        <div class="text-gray-400">Cédula/RIF:</div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-white font-bold">J-506818817</span>
+                            <button onclick="copyText('J506818817', this)" class="text-gray-500 hover:text-primary transition-colors p-1 rounded-md hover:bg-white/5" title="Copiar RIF">
+                                <span class="material-symbols-outlined text-lg">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Separador -->
+                    <div class="border-t border-white/10 my-2"></div>
+                    <!-- Monto (DINÁMICO) -->
+                    <div class="flex justify-between items-center bg-primary/10 -mx-2 px-2 py-2 rounded-lg border border-primary/20">
+                        <div class="text-primary font-bold">Monto a Pagar:</div>
+                        <div class="flex items-center gap-3">
+                            <span id="display-saas-price" class="font-mono text-white font-extrabold text-lg">--</span>
+                            <button id="btn-copy-price" class="text-primary hover:text-white transition-colors p-1 rounded-md hover:bg-primary/20" title="Copiar Monto">
+                                <span class="material-symbols-outlined text-lg">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                      <button onclick="copyAllSaasData(this)" class="w-full mt-4 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 p-2.5 rounded-lg transition-all font-bold text-xs uppercase tracking-wider group">
+                    <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">content_paste</span>
+                    Copiar Todos los Datos
+                    </button>
+                </div>
             </div>
 
+            <!-- FORMULARIO DE REPORTE -->
             <form id="saas-form" class="space-y-4">
                 <input type="text" id="buyer-name" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Tu Nombre Completo">
-                 <div class="pt-2">
-                    <label class="text-xs text-gray-400 uppercase font-bold">Fecha del Pago</label>
-                    <input type="date" id="payment-date" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none">
-                </div>
                 <div class="grid grid-cols-2 gap-4">
                     <input type="tel" id="buyer-ci" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Cédula (V123...)">
                     <input type="tel" id="buyer-phone" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Teléfono">
@@ -83,11 +145,16 @@
                 
                 <hr class="border-white/10">
                 
-                <input type="text" id="raffle-name" required class="w-full bg-primary/10 border border-primary/30 rounded-lg p-3 text-white focus:border-primary outline-none font-bold" placeholder="Nombre de tu Rifa (Ej: Gran Sorteo 2026)">
+                <input type="text" id="raffle-name" required class="w-full bg-primary/10 border border-primary/30 rounded-lg p-3 text-white focus:border-primary outline-none font-bold placeholder-gray-500" placeholder="Nombre de tu Rifa (Ej: Gran Sorteo 2026)">
                 
                 <div class="pt-2">
+                    <label class="text-xs text-gray-400 uppercase font-bold">Fecha del Pago</label>
+                    <input type="date" id="payment-date" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none">
+                </div>
+
+                <div class="pt-2">
                     <label class="text-xs text-gray-400 uppercase font-bold">Referencia de Pago</label>
-                    <input type="tel" id="payment-ref" required maxlength="6" class="w-full bg-black/30 border border-primary/50 rounded-lg p-3 text-white focus:border-primary outline-none text-center font-mono text-lg tracking-widest" placeholder="123456">
+                    <input type="tel" id="payment-ref" required maxlength="12" class="w-full bg-black/30 border border-primary/50 rounded-lg p-3 text-white focus:border-primary outline-none text-center font-mono text-lg tracking-widest" placeholder="123456">
                 </div>
 
                 <button type="submit" class="w-full bg-primary hover:bg-green-400 text-background-dark font-bold py-4 rounded-xl transition-all shadow-lg mt-2">
