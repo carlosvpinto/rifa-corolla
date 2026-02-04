@@ -266,8 +266,8 @@ app.post('/api/saas/buy', async (req, res) => {
     }
 
     // 6. Crear Instancia
-    const adminPin = "2026"; 
-    // const adminPin = Math.floor(1000 + Math.random() * 9000).toString(); // Descomenta para PIN aleatorio
+    //const adminPin = "2026"; 
+    const adminPin = Math.floor(1000 + Math.random() * 9000).toString(); // Descomenta para PIN aleatorio
 
     const newConfig = {
         raffleTitle: raffleName,

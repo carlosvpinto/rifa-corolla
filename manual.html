@@ -11,100 +11,198 @@
         tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#13ec5b", "background-dark": "#102216", "surface-dark": "#1c271f" }, fontFamily: { "display": ["Plus Jakarta Sans", "sans-serif"] } } } }
     </script>
 </head>
-<body class="bg-background-dark font-display text-white">
+<body class="bg-background-dark font-display text-white text-gray-200">
 
     <div class="max-w-4xl mx-auto p-6 md:p-12">
         
-        <header class="mb-12 border-b border-white/10 pb-8">
-            <h1 class="text-4xl font-bold text-primary mb-2">Manual de Usuario</h1>
-            <p class="text-gray-400">Guía completa para administrar tu Rifa Digital.</p>
+        <header class="mb-12 border-b border-white/10 pb-8 text-center md:text-left">
+            <div class="inline-block p-3 bg-primary/10 rounded-xl mb-4 border border-primary/20">
+                <span class="material-symbols-outlined text-primary text-4xl">menu_book</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">Manual de Usuario</h1>
+            <p class="text-gray-400 text-lg">Guía completa para administrar tu Negocio de Sorteos.</p>
         </header>
 
-        <div class="space-y-12">
+        <div class="space-y-16">
             
-            <!-- 1. Primeros Pasos -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="material-symbols-outlined text-primary text-3xl">login</span>
-                    <h2 class="text-2xl font-bold">1. Primer Ingreso</h2>
+            <!-- 1. TUS 3 HERRAMIENTAS -->
+            <section id="herramientas">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-xl border border-blue-500/30">1</div>
+                    <h2 class="text-3xl font-bold text-white">Tus 3 Herramientas de Trabajo</h2>
                 </div>
-                <div class="bg-surface-dark p-6 rounded-xl border border-white/5">
-                    <p class="mb-4">Para entrar a tu panel de control, utiliza el enlace <strong>Admin</strong> que recibiste por correo.</p>
-                    <ul class="list-disc ml-5 space-y-2 text-gray-300">
-                        <li>El sistema te pedirá un <strong>PIN de Seguridad</strong>.</li>
-                        <li>Usa el PIN único que se te envió en el correo de bienvenida.</li>
-                        <li><strong>Recomendación:</strong> Cambia este PIN inmediatamente en el menú de seguridad.</li>
-                    </ul>
-                </div>
-            </section>
+                
+                <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 shadow-lg">
+                    <p class="mb-6 text-lg">Al realizar tu compra, recibiste un correo electrónico con <strong>3 enlaces únicos</strong>. Estos son las llaves de tu negocio:</p>
+                    
+                    <div class="grid gap-4 md:grid-cols-3">
+                        <!-- Link 1: Dashboard -->
+                        <div class="bg-black/30 p-5 rounded-xl border border-white/10 hover:border-blue-500/50 transition-colors">
+                            <span class="material-symbols-outlined text-blue-400 text-3xl mb-2">admin_panel_settings</span>
+                            <h3 class="font-bold text-white text-lg">1. Panel de Control</h3>
+                            <p class="text-sm text-gray-400 mt-2">Tu oficina privada. Aquí configuras precios, ves quién pagó y apruebas ventas.</p>
+                            <div class="mt-3 text-xs bg-blue-500/10 text-blue-300 px-2 py-1 rounded inline-block">Requiere CLAVE DE ACCESO</div>
+                        </div>
 
-            <!-- 2. Configuración -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="material-symbols-outlined text-primary text-3xl">settings</span>
-                    <h2 class="text-2xl font-bold">2. Configuración de la Rifa</h2>
-                </div>
-                <div class="bg-surface-dark p-6 rounded-xl border border-white/5">
-                    <p class="mb-4">En el panel principal encontrarás las opciones para personalizar tu sorteo:</p>
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div class="bg-black/20 p-4 rounded-lg">
-                            <h4 class="font-bold text-primary mb-1">Datos Generales</h4>
-                            <p class="text-sm text-gray-400">Define el nombre del sorteo, precio del ticket, moneda y cantidad total de números.</p>
+                        <!-- Link 2: Ventas -->
+                        <div class="bg-black/30 p-5 rounded-xl border border-white/10 hover:border-green-500/50 transition-colors">
+                            <span class="material-symbols-outlined text-green-400 text-3xl mb-2">storefront</span>
+                            <h3 class="font-bold text-white text-lg">2. Página de Ventas</h3>
+                            <p class="text-sm text-gray-400 mt-2">La vitrina para tus clientes. Copia este link y pégalo en <strong>Instagram, WhatsApp y Facebook</strong>.</p>
+                            <div class="mt-3 text-xs bg-green-500/10 text-green-300 px-2 py-1 rounded inline-block">Público para todos</div>
                         </div>
-                        <div class="bg-black/20 p-4 rounded-lg">
-                            <h4 class="font-bold text-primary mb-1">Datos Bancarios</h4>
-                            <p class="text-sm text-gray-400">Ingresa los datos del Pago Móvil donde tus clientes realizarán la transferencia.</p>
-                        </div>
-                        <div class="bg-black/20 p-4 rounded-lg">
-                            <h4 class="font-bold text-primary mb-1">Galería</h4>
-                            <p class="text-sm text-gray-400">Sube fotos de tu premio. El sistema las optimiza automáticamente.</p>
-                        </div>
-                         <div class="bg-black/20 p-4 rounded-lg">
-                            <h4 class="font-bold text-primary mb-1">Marca</h4>
-                            <p class="text-sm text-gray-400">En el menú superior, usa "Personalizar Marca" para subir tu Logo.</p>
+
+                        <!-- Link 3: Manual -->
+                        <div class="bg-black/30 p-5 rounded-xl border border-white/10 hover:border-yellow-500/50 transition-colors">
+                            <span class="material-symbols-outlined text-yellow-400 text-3xl mb-2">school</span>
+                            <h3 class="font-bold text-white text-lg">3. Manual de Uso</h3>
+                            <p class="text-sm text-gray-400 mt-2">Esta guía digital. Consúltala siempre que tengas dudas sobre el funcionamiento.</p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- 3. Gestión de Ventas -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="material-symbols-outlined text-primary text-3xl">payments</span>
-                    <h2 class="text-2xl font-bold">3. Gestión de Ventas</h2>
+ <!-- 2. PERSONALIZACIÓN -->
+            <section id="configuracion">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-xl border border-purple-500/30">2</div>
+                    <h2 class="text-3xl font-bold text-white">Configuración en Tiempo Real</h2>
                 </div>
-                <div class="bg-surface-dark p-6 rounded-xl border border-white/5 space-y-4">
-                    <h3 class="font-bold text-white">Modo Automático vs Manual</h3>
-                    <p class="text-gray-300">Puedes cambiar el modo de verificación en el panel:</p>
-                    <ul class="list-disc ml-5 space-y-2 text-gray-300 text-sm">
-                        <li><strong>Automático:</strong> El sistema se conecta con el Banco Mercantil (requiere credenciales API) y aprueba solo si el dinero está en cuenta.</li>
-                        <li><strong>Manual:</strong> El sistema recibe el reporte y lo deja en estado "Pendiente" (Reloj Naranja). Tú debes verificar en tu banco y hacer clic en el botón <strong>VALIDAR</strong> para aprobarlo.</li>
-                    </ul>
-                    <div class="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-lg mt-2">
-                        <p class="text-yellow-200 text-sm"><strong>Nota:</strong> Al aprobar un pago, el cliente recibe automáticamente un correo con su Boleto y Código QR.</p>
+                <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 shadow-lg">
+                    <p class="mb-6 text-gray-300">Todo lo que edites en tu Panel de Control se refleja <strong>automáticamente e instantáneamente</strong> en tu Página de Ventas.</p>
+                    
+                    <div class="space-y-6">
+                        <!-- Config General -->
+                        <div class="flex gap-4 items-start">
+                            <span class="material-symbols-outlined text-purple-400 mt-1">tune</span>
+                            <div>
+                                <h4 class="font-bold text-white text-lg">Control Total del Sorteo</h4>
+                                <p class="text-sm text-gray-400 mt-1">Define el nombre de la rifa, el precio del ticket y la moneda (Dólares, Euros o Bolívares). El sistema calculará la tasa automáticamente.</p>
+                            </div>
+                        </div>
+
+                        <!-- NUEVO BLOQUE: GALERÍA DE FOTOS -->
+                        <div class="flex gap-4 items-start">
+                            <span class="material-symbols-outlined text-purple-400 mt-1">add_photo_alternate</span>
+                            <div>
+                                <h4 class="font-bold text-white text-lg">Galería del Premio</h4>
+                                <p class="text-sm text-gray-400 mt-1">
+                                    Es vital que muestres lo que estás sorteando. En la sección <strong>"Galería"</strong> de tu panel, haz clic para subir fotos desde tu celular o computadora.
+                                </p>
+                                <ul class="list-disc ml-5 mt-2 text-sm text-gray-400 space-y-1">
+                                    <li>Puedes subir múltiples fotos a la vez.</li>
+                                    <li>El sistema crea automáticamente un <strong>Carrusel (Slider)</strong> animado.</li>
+                                    <li><span class="text-purple-300">Recomendación:</span> Usa fotos horizontales para que se vean mejor en la portada.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Estrategia de Marketing -->
+                        <div class="flex gap-4 items-start bg-purple-500/5 p-4 rounded-xl border border-purple-500/20">
+                            <span class="material-symbols-outlined text-purple-400 mt-1">trending_up</span>
+                            <div>
+                                <h4 class="font-bold text-white text-lg">Estrategia de Ventas (Barra de Progreso)</h4>
+                                <p class="text-sm text-gray-300 mt-1">
+                                    En tu panel verás una opción llamada <strong>"Progreso Visual"</strong>. 
+                                    Aquí puedes escribir un número manual (ej: 850 de 1000) para que la barra de carga en la página de ventas se vea casi llena.
+                                </p>
+                                <p class="text-xs text-purple-300 mt-2 font-bold uppercase tracking-wide">💡 Tip: Esto crea sentido de urgencia en tus clientes.</p>
+                            </div>
+                        </div>
+
+                        <!-- Datos Bancarios -->
+                        <div class="flex gap-4 items-start">
+                            <span class="material-symbols-outlined text-purple-400 mt-1">account_balance</span>
+                            <div>
+                                <h4 class="font-bold text-white text-lg">Tu Cuenta Bancaria</h4>
+                                <p class="text-sm text-gray-400 mt-1">Ingresa tus propios datos de Pago Móvil. El dinero va directo a tu cuenta, sin intermediarios.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
-            
-            <!-- 4. Sorteo -->
-            <section>
-                <div class="flex items-center gap-3 mb-4">
-                    <span class="material-symbols-outlined text-primary text-3xl">emoji_events</span>
-                    <h2 class="text-2xl font-bold">4. Realizar Sorteo</h2>
+
+            <!-- 3. GESTIÓN DE PAGOS -->
+            <section id="pagos">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xl border border-primary/30">3</div>
+                    <h2 class="text-3xl font-bold text-white">Gestión y Verificación de Pagos</h2>
                 </div>
-                <div class="bg-surface-dark p-6 rounded-xl border border-white/5">
-                    <p class="text-gray-300">Haz clic en el ícono de la <strong>Copa (🏆)</strong> en el encabezado.</p>
-                    <ul class="list-disc ml-5 mt-2 space-y-2 text-gray-300">
-                        <li><strong>Búsqueda Manual:</strong> Si usas una lotería externa (ej. Triple Táchira), escribe el número ganador para ver quién lo tiene.</li>
-                        <li><strong>Aleatorio:</strong> El sistema elegirá al azar uno de los tickets vendidos.</li>
-                    </ul>
+                
+                <div class="bg-surface-dark p-8 rounded-2xl border border-primary/20 shadow-lg">
+                    <p class="mb-6 text-gray-300">En la parte inferior de tu panel verás la <strong>Tabla de Transacciones</strong>. Aquí llevas el control absoluto de tu dinero.</p>
+
+                    <div class="grid md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-black/30 p-5 rounded-xl border-l-4 border-green-500">
+                            <h4 class="font-bold text-green-400 mb-2">Ingresos Totales</h4>
+                            <p class="text-xs text-gray-400">El sistema suma automáticamente todo lo que has vendido, tanto en Bolívares como en Dólares, para que sepas exactamente cuánto has ganado.</p>
+                        </div>
+                        <div class="bg-black/30 p-5 rounded-xl border-l-4 border-blue-500">
+                            <h4 class="font-bold text-blue-400 mb-2">Base de Datos de Clientes</h4>
+                            <p class="text-xs text-gray-400">Guarda nombre, cédula, teléfono y correo de cada participante. Puedes descargar esta lista en Excel con un solo clic.</p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Modos de Verificación</h3>
+                    
+                    <div class="space-y-6">
+                        <!-- Manual -->
+                        <div class="flex gap-4">
+                            <div class="mt-1"><span class="material-symbols-outlined text-orange-400 text-2xl">pan_tool</span></div>
+                            <div>
+                                <h4 class="font-bold text-orange-400 text-lg">Modo Manual (Recomendado)</h4>
+                                <p class="text-sm text-gray-400 mt-1">El cliente reporta el pago. En tu panel aparecerá con un reloj naranja <span class="material-symbols-outlined text-xs align-middle">pending</span>.</p>
+                                <p class="text-sm text-gray-400 mt-1">Tú revisas tu banco. Si el dinero está, haces clic en el botón <strong>VALIDAR</strong> en la tabla.</p>
+                                <p class="text-sm text-white mt-1">✅ Al hacerlo, el sistema envía automáticamente el boleto verificado al cliente.</p>
+                            </div>
+                        </div>
+
+                        <!-- Automático -->
+                        <div class="flex gap-4 opacity-75">
+                            <div class="mt-1"><span class="material-symbols-outlined text-green-400 text-2xl">smart_toy</span></div>
+                            <div>
+                                <h4 class="font-bold text-green-400 text-lg">Modo Automático</h4>
+                                <p class="text-sm text-gray-400 mt-1">Requiere integración API con el Banco Mercantil. Si está activo, el sistema rechaza referencias falsas automáticamente.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+            
+            <!-- 4. SORTEO FINAL -->
+            <section id="sorteo">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 font-bold text-xl border border-yellow-500/30">4</div>
+                    <h2 class="text-3xl font-bold text-white">El Gran Final: Sorteo</h2>
+                </div>
+                <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 shadow-lg">
+                    <p class="mb-4 text-gray-300">Haz clic en el ícono de la <strong>Copa (🏆)</strong> en el encabezado de tu panel para abrir el módulo de premiación.</p>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4 bg-white/5 p-4 rounded-xl">
+                            <span class="material-symbols-outlined text-yellow-400 text-2xl">search</span>
+                            <div>
+                                <h4 class="font-bold text-white">Buscar Ganador (Lotería TV)</h4>
+                                <p class="text-xs text-gray-400">Escribe el número que salió en la lotería y el sistema te dirá quién lo compró y si está pagado.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 bg-white/5 p-4 rounded-xl">
+                            <span class="material-symbols-outlined text-yellow-400 text-2xl">casino</span>
+                            <div>
+                                <h4 class="font-bold text-white">Sorteo Aleatorio</h4>
+                                <p class="text-xs text-gray-400">El sistema elige al azar un ticket <strong>entre los vendidos y verificados</strong>, garantizando un ganador real.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
         </div>
         
-        <footer class="mt-12 pt-8 border-t border-white/10 text-center text-gray-500 text-sm">
-            &copy; 2026 Plataforma de Rifas SaaS. Todos los derechos reservados.
+        <footer class="mt-16 pt-8 border-t border-white/10 text-center text-gray-500 text-sm">
+            <p class="mb-2 font-bold text-white">&copy; 2026 SaaS Rifa.</p>
+            <p>Plataforma Potenciada por Desoftsis.</p>
         </footer>
     </div>
 </body>

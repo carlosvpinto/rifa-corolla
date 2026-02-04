@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RifaPro | Software de Rifas Digitales - Automatiza tus Sorteos</title>
+    
+    <!-- Meta tags SEO -->
+    <meta name="description" content="Software SaaS profesional para crear y gestionar rifas digitales. Verificación automática de pagos, tickets con QR y panel de control en tiempo real.">
+    <meta name="keywords" content="rifas digitales, software rifas, sorteo online, pago móvil automatizado, tickets QR, gestión de sorteos">
+    <meta name="author" content="RifaPro">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="RifaPro | Software de Rifas Digitales Profesional">
+    <meta property="og:description" content="Automatiza tus rifas con verificación instantánea de pagos y gestión completa desde tu panel de control.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" type="image/x-icon">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        dark: {
+                            900: '#0a160e',
+                            800: '#0f1f13',
+                            700: '#142918',
+                            600: '#1a331e',
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'gradient': 'gradient 8s ease infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        gradient: {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'gradient-primary': 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                    }
+                },
+            },
+        }
+    </script>
+    
+    <style>
+        /* Estilos personalizados */
+        :root {
+            --primary-500: #22c55e;
+            --primary-600: #16a34a;
+        }
+        
+        /* Glassmorphism effect */
+        .glass-effect {
+            background: rgba(16, 34, 22, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #4ade80 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a160e;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+        }
+        
+        /* Input styles */
+        .input-enhanced {
+            background: rgba(0, 0, 0, 0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.2s ease !important;
+            color: #f8fafc !important;
+        }
+        
+        .input-enhanced:focus {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
+            outline: none !important;
+        }
+        
+        .input-enhanced::placeholder {
+            color: rgba(255, 255, 255, 0.4) !important;
+        }
+        
+        /* Card hover effects */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+        
+        /* Animated background */
+        .animated-bg {
+            background: linear-gradient(-45deg, #0a160e, #0f1f13, #142918, #1a331e);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        /* Badge styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .badge-primary {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+        }
+        
+        .badge-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        /* Pulse animation */
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(34, 197, 94, 0.8);
+            }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-100 font-sans min-h-screen animated-bg">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-effect border-b border-white/5">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white">
+                            rocket_launch
+                        </span>
+                    </div>
+                    <span class="text-xl font-bold">
+                        Rifa<span class="gradient-text">Pro</span>
+                    </span>
+                </div>
+                
+                <!-- CTA Button -->
+                <button 
+                    onclick="openPurchaseModal()" 
+                    class="bg-gradient-primary hover:opacity-90 text-white font-semibold px-6 py-2.5 rounded-lg transition-all duration-200 shadow-lg hover:shadow-green-500/25 hidden md:block">
+                    Obtener Licencia
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-6 relative overflow-hidden">
+        <!-- Background elements -->
+        <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-green-500/5 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-500/5 rounded-full blur-3xl"></div>
+        
+        <div class="container mx-auto max-w-6xl relative z-10">
+            <!-- Badge -->
+            <div class="flex justify-center mb-8">
+                <span class="badge badge-primary flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">
+                        stars
+                    </span>
+                    <span>Software #1 en Venezuela</span>
+                </span>
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold text-center mb-6 leading-tight">
+                <span class="block">Crea Tu Rifa Digital</span>
+                <span class="gradient-text">Profesional en 5 Minutos</span>
+            </h1>
+            
+            <!-- Subtitle -->
+            <p class="text-xl text-gray-400 text-center max-w-3xl mx-auto mb-10 leading-relaxed">
+                Automatiza completamente tu sorteo con verificación instantánea de pagos, 
+                tickets con QR y un panel de control en tiempo real. Sin conocimientos técnicos.
+            </p>
+            
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                <button 
+                    onclick="openPurchaseModal()" 
+                    class="bg-gradient-primary hover:opacity-90 text-white font-bold text-lg px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-xl pulse-glow flex items-center gap-3">
+                    <span class="material-symbols-outlined">
+                        rocket_launch
+                    </span>
+                    <span>Obtener Licencia por $50</span>
+                </button>
+                
+                <button 
+                    onclick="scrollToFeatures()" 
+                    class="px-8 py-4 border border-white/20 hover:border-green-500/50 text-gray-300 hover:text-white rounded-xl transition-all duration-300 hover:bg-white/5 flex items-center gap-3">
+                    <span class="material-symbols-outlined">
+                        visibility
+                    </span>
+                    <span>Ver Características</span>
+                </button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                <div class="glass-effect p-6 rounded-xl text-center">
+                    <div class="text-3xl font-bold text-white mb-2">500+</div>
+                    <div class="text-gray-400 text-sm">Rifas Creadas</div>
+                </div>
+                <div class="glass-effect p-6 rounded-xl text-center">
+                    <div class="text-3xl font-bold text-white mb-2">99%</div>
+                    <div class="text-gray-400 text-sm">Tiempo Activo</div>
+                </div>
+                <div class="glass-effect p-6 rounded-xl text-center">
+                    <div class="text-3xl font-bold text-white mb-2">5min</div>
+                    <div class="text-gray-400 text-sm">Configuración</div>
+                </div>
+                <div class="glass-effect p-6 rounded-xl text-center">
+                    <div class="text-3xl font-bold text-white mb-2">24/7</div>
+                    <div class="text-gray-400 text-sm">Soporte</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-6 bg-dark-800/50">
+        <div class="container mx-auto max-w-6xl">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    Todo lo que necesitas para tu <span class="gradient-text">Rifa Digital</span>
+                </h2>
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+                    Características diseñadas para maximizar tu éxito y simplificar la gestión
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="glass-effect p-8 rounded-2xl card-hover animate-fade-in-up">
+                    <div class="w-14 h-14 bg-green-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-symbols-outlined text-green-400 text-3xl">
+                            verified_user
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Verificación Automática</h3>
+                    <p class="text-gray-400 mb-4">
+                        Conexión directa con Banco Mercantil. Los pagos se verifican en segundos sin intervención manual.
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Detección instantánea</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Sin falsos positivos</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Historial completo</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="glass-effect p-8 rounded-2xl card-hover animate-fade-in-up" style="animation-delay: 0.1s">
+                    <div class="w-14 h-14 bg-blue-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-symbols-outlined text-blue-400 text-3xl">
+                            dashboard
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Panel de Control Pro</h3>
+                    <p class="text-gray-400 mb-4">
+                        Gestiona ventas, configura precios, sube imágenes y realiza sorteos desde cualquier dispositivo.
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Diseño responsive</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Estadísticas en tiempo real</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Exportación de datos</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="glass-effect p-8 rounded-2xl card-hover animate-fade-in-up" style="animation-delay: 0.2s">
+                    <div class="w-14 h-14 bg-purple-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-symbols-outlined text-purple-400 text-3xl">
+                            qr_code_2
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Tickets Profesionales</h3>
+                    <p class="text-gray-400 mb-4">
+                        Boletos digitales con QR único, diseño personalizable y envío automático por correo.
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Diseño personalizable</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>QR único por ticket</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Envío automático</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="glass-effect p-8 rounded-2xl card-hover animate-fade-in-up" style="animation-delay: 0.3s">
+                    <div class="w-14 h-14 bg-orange-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-symbols-outlined text-orange-400 text-3xl">
+                            security
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Seguridad Total</h3>
+                    <p class="text-gray-400 mb-4">
+                        Sistema protegido con autenticación de dos factores y encriptación de extremo a extremo.
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Datos encriptados</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Backup automático</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Protección anti-fraude</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="glass-effect p-8 rounded-2xl card-hover animate-fade-in-up" style="animation-delay: 0.4s">
+                    <div class="w-14 h-14 bg-red-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-symbols-outlined text-red-400 text-3xl">
+                            live_tv
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Sorteos en Vivo</h3>
+                    <p class="text-gray-400 mb-4">
+                        Realiza sorteos en vivo con selección aleatoria o por número específico. Transparente y verificable.
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Selección aleatoria</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Historial de ganadores</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Certificado de sorteo</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="glass-effect p-8 rounded-2xl card-hover animate-fade-in-up" style="animation-delay: 0.5s">
+                    <div class="w-14 h-14 bg-cyan-500/10 rounded-xl flex items-center justify-center mb-6">
+                        <span class="material-symbols-outlined text-cyan-400 text-3xl">
+                            support_agent
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Soporte Prioritario</h3>
+                    <p class="text-gray-400 mb-4">
+                        Asistencia técnica 24/7 con respuestas en menos de 1 hora y documentación completa.
+                    </p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Soporte 24/7</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Manuales detallados</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300">
+                            <span class="material-symbols-outlined text-green-400 text-sm">
+                                check_circle
+                            </span>
+                            <span>Actualizaciones gratis</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 px-6">
+        <div class="container mx-auto max-w-4xl">
+            <div class="glass-effect rounded-3xl p-12 text-center relative overflow-hidden">
+                <!-- Background elements -->
+                <div class="absolute -top-20 -right-20 w-64 h-64 bg-green-500/10 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-green-500/10 rounded-full blur-3xl"></div>
+                
+                <div class="relative z-10">
+                    <span class="badge badge-primary mb-6">
+                        Oferta Limitada
+                    </span>
+                    
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                        ¿Listo para transformar tu sorteo?
+                    </h2>
+                    
+                    <p class="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
+                        Obtén acceso inmediato al software más completo de rifas digitales. 
+                        Sin contratos, sin límites, sin complicaciones.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+                        <div class="text-left">
+                            <div class="text-5xl font-bold gradient-text mb-2">$50</div>
+                            <div class="text-gray-400 text-sm">Pago único • Sin mensualidades</div>
+                        </div>
+                        
+                        <div class="h-12 w-px bg-white/10 hidden sm:block"></div>
+                        
+                        <div class="space-y-2 text-left">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-green-400">
+                                    check_circle
+                                </span>
+                                <span class="text-gray-300">Licencia de por vida</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-green-400">
+                                    check_circle
+                                </span>
+                                <span class="text-gray-300">Soporte prioritario</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-green-400">
+                                    check_circle
+                                </span>
+                                <span class="text-gray-300">Actualizaciones gratis</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onclick="openPurchaseModal()" 
+                        class="mt-10 bg-gradient-primary hover:opacity-90 text-white font-bold text-lg px-10 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-xl pulse-glow flex items-center justify-center gap-3 mx-auto">
+                        <span class="material-symbols-outlined">
+                            shopping_cart
+                        </span>
+                        <span>Obtener Licencia Ahora</span>
+                    </button>
+                    
+                    <p class="text-gray-500 text-sm mt-6">
+                        Garantía de 7 días • Sin preguntas • Reembolso completo
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal de Compra -->
+    <div id="purchase-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 hidden animate-fade-in">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closePurchaseModal()"></div>
+        
+        <div class="relative w-full max-w-2xl glass-effect rounded-2xl shadow-2xl border border-white/10 overflow-hidden animate-slide-up">
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-white/5 bg-gradient-to-r from-green-900/20 to-transparent">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold">Activa Tu Software de Rifas</h2>
+                        <p class="text-gray-400 text-sm">Completa el formulario y recibe acceso inmediato</p>
+                    </div>
+                    <button 
+                        onclick="closePurchaseModal()" 
+                        class="text-gray-400 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">
+                            close
+                        </span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="p-6">
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <!-- Left Column - Payment Info -->
+                    <div>
+                        <div class="mb-6">
+                            <h3 class="text-lg font-bold mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-green-400">
+                                    payments
+                                </span>
+                                <span>Información de Pago</span>
+                            </h3>
+                            
+                            <div class="bg-black/30 p-5 rounded-xl border border-green-500/20">
+                                <div class="mb-4">
+                                    <label class="block text-gray-400 text-sm mb-2">Banco Destino</label>
+                                    <div class="font-semibold text-white">Banco Mercantil</div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="block text-gray-400 text-sm mb-2">Datos del Beneficiario</label>
+                                    <div class="space-y-1">
+                                        <div class="font-mono text-sm bg-black/50 p-2 rounded">Cédula: J-506818817</div>
+                                        <div class="font-mono text-sm bg-black/50 p-2 rounded">Teléfono: 0424-345-4032</div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-400 text-sm mb-2">Monto a Pagar</label>
+                                    <div class="text-2xl font-bold gradient-text">$50.00 USD</div>
+                                    <p class="text-gray-500 text-xs mt-1">Equivalente en bolívares al cambio del día</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-500/5 border border-green-500/20 rounded-xl p-4">
+                            <div class="flex items-start gap-3">
+                                <span class="material-symbols-outlined text-green-400">
+                                    verified
+                                </span>
+                                <div>
+                                    <h4 class="font-semibold mb-1">Proceso Seguro</h4>
+                                    <p class="text-gray-400 text-sm">
+                                        Tu pago se verifica automáticamente mediante nuestra conexión directa con el banco.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column - Form -->
+                    <div>
+                        <form id="saas-form" class="space-y-4">
+                            <!-- Personal Info -->
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Nombre Completo *
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="buyer-name" 
+                                        required 
+                                        class="input-enhanced w-full rounded-lg px-4 py-3"
+                                        placeholder="Tu nombre completo">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Cédula *
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="buyer-ci" 
+                                        required 
+                                        class="input-enhanced w-full rounded-lg px-4 py-3"
+                                        placeholder="V-12345678">
+                                </div>
+                            </div>
+                            
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Teléfono *
+                                    </label>
+                                    <input 
+                                        type="tel" 
+                                        id="buyer-phone" 
+                                        required 
+                                        class="input-enhanced w-full rounded-lg px-4 py-3"
+                                        placeholder="0412-345-6789">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Fecha de Pago *
+                                    </label>
+                                    <input 
+                                        type="date" 
+                                        id="payment-date" 
+                                        required 
+                                        class="input-enhanced w-full rounded-lg px-4 py-3">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    Correo Electrónico *
+                                </label>
+                                <input 
+                                    type="email" 
+                                    id="buyer-email" 
+                                    required 
+                                    class="input-enhanced w-full rounded-lg px-4 py-3"
+                                    placeholder="tu@correo.com">
+                                <p class="text-gray-500 text-xs mt-1">Aquí recibirás los accesos a tu software</p>
+                            </div>
+                            
+                            <!-- Raffle Info -->
+                            <div class="pt-4 border-t border-white/5">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Nombre de Tu Rifa *
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="raffle-name" 
+                                        required 
+                                        class="input-enhanced w-full rounded-lg px-4 py-3 font-semibold"
+                                        placeholder="Ej: Gran Sorteo del Carro 2024">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Referencia de Pago Móvil (6 dígitos) *
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="payment-ref" 
+                                        required 
+                                        maxlength="6" 
+                                        class="input-enhanced w-full rounded-lg px-4 py-3 text-center text-xl font-mono tracking-widest"
+                                        placeholder="123456">
+                                    <p class="text-gray-500 text-xs mt-1">La referencia de 6 dígitos de tu transferencia</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <button 
+                                type="submit" 
+                                class="w-full bg-gradient-primary hover:opacity-90 text-white font-bold py-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg mt-6 flex items-center justify-center gap-3">
+                                <span id="submit-icon" class="material-symbols-outlined">
+                                    verified
+                                </span>
+                                <span id="submit-text">Verificar y Activar Software</span>
+                            </button>
+                            
+                            <p class="text-gray-500 text-xs text-center mt-4">
+                                Al completar la compra, aceptas nuestros 
+                                <a href="#" class="text-green-400 hover:underline">Términos de Servicio</a>
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark-800 border-t border-white/5 py-12 px-6">
+        <div class="container mx-auto max-w-6xl">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                            <span class="material-symbols-outlined text-white">
+                                rocket_launch
+                            </span>
+                        </div>
+                        <span class="text-xl font-bold">
+                            Rifa<span class="gradient-text">Pro</span>
+                        </span>
+                    </div>
+                    <p class="text-gray-500 text-sm">
+                        Software profesional para rifas digitales<br>
+                        © 2024 Todos los derechos reservados
+                    </p>
+                </div>
+                
+                <div class="flex items-center gap-6">
+                    <a href="#" class="text-gray-400 hover:text-green-400 transition-colors">
+                        Términos
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-green-400 transition-colors">
+                        Privacidad
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-green-400 transition-colors">
+                        Soporte
+                    </a>
+                </div>
+                
+                <button 
+                    onclick="openPurchaseModal()" 
+                    class="bg-gradient-primary hover:opacity-90 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200">
+                    Comprar Ahora
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="landing.js"></script>
+    
+    <!-- Inline scripts for basic interactions -->
+    <script>
+        function scrollToFeatures() {
+            document.getElementById('features').scrollIntoView({ 
+                behavior: 'smooth' 
+            });
+        }
+        
+        function openPurchaseModal() {
+            document.getElementById('purchase-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('payment-date');
+            if (dateInput) {
+                dateInput.value = today;
+                dateInput.min = today;
+            }
+        }
+        
+        function closePurchaseModal() {
+            document.getElementById('purchase-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePurchaseModal();
+            }
+        });
+    </script>
+</body>
+</html>

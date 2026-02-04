@@ -1,71 +1,80 @@
 // ==========================================
-// CONFIGURACIÓN
+// CONFIGURACIÓN (LOCAL / PROD)
 // ==========================================
-// const BASE_API = "https://rifa-carros-corolla.onrender.com/api"; // Producción
-const BASE_API = "http://localhost:3000/api"; // Local
+// ⚠️ URL DE PRODUCCIÓN (Render) - DESCOMENTAR AL SUBIR
+// const API_URL = "https://rifa-carros-corolla.onrender.com/api/saas/buy";
+// const MASTER_CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/master/config";
+// const API_RATE = "https://rifa-carros-corolla.onrender.com/api/tasa";
 
-const API_BUY = `${BASE_API}/saas/buy`;
-const API_CONFIG = `${BASE_API}/master/config`;
-const API_RATE = `${BASE_API}/tasa`;
+// ⚠️ URL LOCAL (Para pruebas)
+const API_URL = "http://localhost:3000/api/saas/buy";
+const MASTER_CONFIG_URL = "http://localhost:3000/api/master/config";
+const API_RATE = "http://localhost:3000/api/tasa";
 
+// VARIABLES GLOBALES (Definidas aquí para evitar ReferenceError)
 let SOFTWARE_PRICE_USD = 50; 
 let EXCHANGE_RATE = 0;
 let SOFTWARE_PRICE_VES = 0;
 
 // ==========================================
-// 1. CARGAR DATOS (PRECIO + TASA)
+// 1. CARGAR PRECIO Y TASA
 // ==========================================
 async function initLanding() {
     try {
-        // Ejecutamos ambas peticiones en paralelo para que sea rápido
+        console.log("Cargando precios...");
+        
+        // Cargar Configuración y Tasa en paralelo
         const [configRes, rateRes] = await Promise.all([
-            fetch(API_CONFIG),
+            fetch(MASTER_CONFIG_URL),
             fetch(API_RATE)
         ]);
 
         const configData = await configRes.json();
         const rateData = await rateRes.json();
 
-        // 1. Establecer Precio USD
+        // 1. Precio USD
         if (configData.softwarePrice) {
             SOFTWARE_PRICE_USD = parseFloat(configData.softwarePrice);
         }
 
-        // 2. Establecer Tasa
+        // 2. Tasa BCV
         if (rateData.rate) {
             EXCHANGE_RATE = parseFloat(rateData.rate);
+        } else {
+            EXCHANGE_RATE = 60; // Fallback
         }
 
-        // 3. Calcular Bolívares
+        // 3. Calcular Bs
         SOFTWARE_PRICE_VES = SOFTWARE_PRICE_USD * EXCHANGE_RATE;
         const vesFormatted = SOFTWARE_PRICE_VES.toFixed(2);
 
-        console.log(`Precio: $${SOFTWARE_PRICE_USD} | Tasa: ${EXCHANGE_RATE} | Bs: ${vesFormatted}`);
+        console.log(`Precio: $${SOFTWARE_PRICE_USD} | Tasa: ${EXCHANGE_RATE}`);
 
-        // --- ACTUALIZAR INTERFAZ ---
+        // --- ACTUALIZAR UI ---
 
-        // A. Botón Grande (Header)
+        // A. Botón Principal (Hero)
         const btnDisplay = document.getElementById('btn-buy-license');
         if (btnDisplay) {
             btnDisplay.innerHTML = `
-                Obtener Licencia <br>
-                <span class="text-sm font-normal">$${SOFTWARE_PRICE_USD} (Bs. ${vesFormatted})</span>
+                Obtener Licencia por $${SOFTWARE_PRICE_USD}<br>
+                <span class="text-sm font-normal text-green-200">Bs. ${vesFormatted}</span>
             `;
         }
 
-        // B. Monto en el Formulario (Modal)
+        // B. Precio Grande (Sección Demo)
+        const bigPrice = document.getElementById('display-price-big');
+        if (bigPrice) bigPrice.innerText = `$${SOFTWARE_PRICE_USD}`;
+
+        // C. Monto en el Modal
         const modalPrice = document.getElementById('display-saas-price');
         if (modalPrice) {
             modalPrice.innerHTML = `$${SOFTWARE_PRICE_USD} <span class="text-sm text-gray-400">/ Bs. ${vesFormatted}</span>`;
         }
 
-        // C. Actualizar Botón de Copiar (Copia los Bs. para facilitar el pago)
+        // D. Botón Copiar Precio
         const copyPriceBtn = document.getElementById('btn-copy-price');
         if (copyPriceBtn) {
-            copyPriceBtn.onclick = function() {
-                // Copiamos el monto en Bolívares que es lo que el banco pide
-                copyText(vesFormatted, this);
-            };
+            copyPriceBtn.onclick = function() { copyText(vesFormatted, this); };
         }
 
     } catch (error) {
@@ -73,9 +82,7 @@ async function initLanding() {
     }
 }
 
-// Iniciar al cargar
 initLanding();
-
 
 // ==========================================
 // 2. UTILIDADES UI
@@ -88,7 +95,6 @@ window.copyText = (text, btnElement) => {
     });
 };
 
-// Función especial para copiar TODO el bloque
 window.copyAllSaasData = (btnElement) => {
     const textToCopy = `
 Banco: Mercantil (0105)
@@ -96,7 +102,6 @@ Teléfono: 0424-345-4032
 RIF: J-506818817
 Monto: Bs. ${SOFTWARE_PRICE_VES.toFixed(2)} ($${SOFTWARE_PRICE_USD})
 `.trim();
-
     navigator.clipboard.writeText(textToCopy).then(() => {
         const originalContent = btnElement.innerHTML;
         btnElement.innerHTML = `<span class="material-symbols-outlined text-green-400">check_circle</span> Copiado`;
@@ -107,7 +112,6 @@ Monto: Bs. ${SOFTWARE_PRICE_VES.toFixed(2)} ($${SOFTWARE_PRICE_USD})
         }, 2000);
     });
 };
-
 
 // ==========================================
 // 3. MODAL Y FORMULARIO
@@ -127,10 +131,9 @@ const saasForm = document.getElementById('saas-form');
 if (saasForm) {
     saasForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerText;
-        btn.innerText = "Validando...";
+        btn.innerText = "Verificando Pago...";
         btn.disabled = true;
 
         const data = {
@@ -144,11 +147,11 @@ if (saasForm) {
             raffleName: document.getElementById('raffle-name').value,
             paymentRef: document.getElementById('payment-ref').value,
             paymentDate: document.getElementById('payment-date').value,
-            amount: SOFTWARE_PRICE_USD // Enviamos USD, el backend convierte
+            amount: SOFTWARE_PRICE_USD // Enviamos USD
         };
 
         try {
-            const response = await fetch(API_BUY, {
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -159,21 +162,16 @@ if (saasForm) {
             if (response.ok) {
                 btn.className = "w-full bg-green-500 text-white font-bold py-4 rounded-xl";
                 btn.innerText = "¡ACTIVADO!";
-                alert("¡Compra exitosa! Bienvenido.");
+                alert("¡Felicidades! Tu software ha sido creado. Redirigiendo a tu nuevo panel.");
                 window.location.href = result.redirectUrl;
             } else {
-                // Mostrar el monto esperado en el error para ayudar al usuario
-                const errorMsg = result.error.includes("Pago no encontrado") 
-                    ? `Pago no encontrado.\nVerifica que hayas transferido Bs. ${SOFTWARE_PRICE_VES.toFixed(2)}`
-                    : result.error;
-                    
-                alert("❌ " + errorMsg);
+                alert("❌ " + (result.error || "Pago no verificado."));
                 btn.innerText = originalText;
                 btn.disabled = false;
             }
         } catch (error) {
             console.error(error);
-            alert("Error de conexión");
+            alert("Error de conexión. Asegúrate que el servidor esté encendido.");
             btn.innerText = originalText;
             btn.disabled = false;
         }

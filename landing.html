@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea tu Rifa Digital - Software Automático</title>
+    <title>Tu Plataforma de Rifas - Sin Servidores ni Dominios</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
@@ -12,159 +12,187 @@
             darkMode: "class",
             theme: {
                 extend: {
-                    colors: { "primary": "#13ec5b", "background-dark": "#102216", "surface-dark": "#1c271f" },
+                    colors: { "primary": "#13ec5b", "background-dark": "#0B0F19", "surface-dark": "#151B2B" },
                     fontFamily: { "display": ["Plus Jakarta Sans", "sans-serif"] },
                 },
             },
         }
     </script>
 </head>
-<body class="bg-background-dark font-display text-white">
+<body class="bg-background-dark font-display text-white selection:bg-primary selection:text-black">
 
-    <!-- Hero Section (Lo único visible al entrar) -->
-    <header class="container mx-auto px-6 py-16 text-center">
-        <div class="inline-block p-3 rounded-full bg-primary/10 text-primary mb-6 animate-bounce">
-            <span class="material-symbols-outlined text-4xl">rocket_launch</span>
+    <!-- NAV -->
+    <nav class="flex justify-between items-center px-6 py-4 border-b border-white/5 bg-background-dark/80 backdrop-blur fixed w-full z-40">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-3xl">confirmation_number</span>
+            <span class="font-bold text-lg tracking-wide">RIFAS<span class="text-primary">SAAS</span></span>
         </div>
-        <h1 class="text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
-            Lanza tu Rifa Digital<br><span class="text-primary">En Menos de 5 Minutos</span>
+        <button onclick="openPurchaseModal()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all">
+            Comenzar
+        </button>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <header class="container mx-auto px-6 pt-32 pb-16 text-center max-w-5xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 mb-6 text-xs font-bold uppercase tracking-widest animate-pulse">
+            <span class="w-2 h-2 rounded-full bg-primary"></span> Solución Llave en Mano
+        </div>
+        
+        <!-- TÍTULO NUEVO -->
+        <h1 class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tight">
+            Tu Rifas Online<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-green-400">Sin Comprar Dominios</span>
         </h1>
-        <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-            El software más avanzado con verificación automática de Pago Móvil, sorteos en vivo y gestión de tickets. Sin programar nada.
+        
+        <!-- SUBTÍTULO ENFÁTICO -->
+        <p class="text-xl text-gray-400 mb-10 leading-relaxed max-w-3xl mx-auto">
+            Olvídate de pagar hostings, servidores o programadores. 
+            <strong class="text-white">Te entregamos un Link Personalizado inmediatamente</strong> 
+            con tu aplicación instalada, lista para vender tickets y validar pagos móviles automáticamente.
         </p>
         
-        <!-- BOTÓN QUE ABRE LA VENTANA -->
-        <button id="btn-buy-license" onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(19,236,91,0.4)]">
-            Obtener Licencia por $--
-        </button>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <!-- BOTÓN CON PRECIO DINÁMICO -->
+            <button id="btn-buy-license" onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-extrabold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(19,236,91,0.3)] flex items-center justify-center gap-2 text-center">
+                <span>Obtener Licencia por $--</span>
+            </button>
+        </div>
+        
+        <div class="mt-12 flex flex-wrap justify-center gap-4 md:gap-8 text-gray-500 text-sm font-medium uppercase tracking-widest">
+            <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">cloud_done</span> Hosting Incluido</div>
+            <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">link</span> Link Propio</div>
+            <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">bolt</span> Entrega Inmediata</div>
+        </div>
     </header>
 
-    <!-- Features -->
-    <section class="container mx-auto px-6 py-12 grid md:grid-cols-3 gap-8">
-        <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
-            <span class="material-symbols-outlined text-primary text-4xl mb-4">verified_user</span>
-            <h3 class="text-xl font-bold mb-2">Pagos Automáticos</h3>
-            <p class="text-gray-400">Conexión directa con Banco Mercantil. Verifica transferencias en segundos.</p>
+    <!-- CARACTERÍSTICAS -->
+    <section class="py-20 bg-surface-dark border-y border-white/5">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-background-dark p-8 rounded-2xl border border-white/5 hover:border-primary/30 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-4xl mb-4">dns</span>
+                    <h3 class="text-xl font-bold mb-3 text-white">No necesitas Servidor</h3>
+                    <p class="text-gray-400 text-sm">Nosotros alojamos la aplicación por ti. Tú solo te preocupas por compartir tu link y vender.</p>
+                </div>
+                <div class="bg-background-dark p-8 rounded-2xl border border-white/5 hover:border-primary/30 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-4xl mb-4">verified</span>
+                    <h3 class="text-xl font-bold mb-3 text-white">Validación Bancaria</h3>
+                    <p class="text-gray-400 text-sm">El sistema detecta automáticamente los pagos en tu cuenta Mercantil. Adiós a los captures falsos.</p>
+                </div>
+                <div class="bg-background-dark p-8 rounded-2xl border border-white/5 hover:border-primary/30 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-4xl mb-4">admin_panel_settings</span>
+                    <h3 class="text-xl font-bold mb-3 text-white">Tu Propio Panel</h3>
+                    <p class="text-gray-400 text-sm">Sube tus fotos, cambia los precios y administra tus ventas desde tu celular.</p>
+                </div>
+            </div>
         </div>
-        <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
-            <span class="material-symbols-outlined text-primary text-4xl mb-4">dashboard</span>
-            <h3 class="text-xl font-bold mb-2">Panel de Control</h3>
-            <p class="text-gray-400">Administra tus ventas, cambia precios, sube fotos y realiza sorteos desde tu celular.</p>
-        </div>
-        <div class="bg-surface-dark p-8 rounded-2xl border border-white/5 hover:border-primary/50 transition-colors">
-            <span class="material-symbols-outlined text-primary text-4xl mb-4">qr_code_2</span>
-            <h3 class="text-xl font-bold mb-2">Tickets con QR</h3>
-            <p class="text-gray-400">Tus clientes reciben un boleto digital profesional por correo con código QR único.</p>
+        
+    </section>
+    
+
+    <!-- SECCIÓN DE PRECIO -->
+    <section id="demo" class="py-20 container mx-auto px-6">
+        <div class="flex flex-col md:flex-row items-center gap-12 bg-gradient-to-r from-surface-dark to-background-dark p-10 rounded-3xl border border-white/10">
+            <div class="flex-1 space-y-6">
+                <h2 class="text-4xl font-extrabold leading-tight">Empieza a vender hoy mismo.</h2>
+                <p class="text-gray-400">Pago único de por vida. Sin mensualidades ocultas.</p>
+                <div class="pt-4">
+                    <div class="flex items-baseline gap-2">
+                        <!-- PRECIO GRANDE ABAJO -->
+                        <span class="text-5xl font-black text-white" id="display-price-big">$--</span>
+                        <span class="text-xl text-gray-500">/ Único</span>
+                    </div>
+                </div>
+                <button onclick="openPurchaseModal()" class="w-full md:w-auto bg-white text-background-dark font-bold px-8 py-4 rounded-xl text-lg hover:bg-gray-200 transition-colors">
+                    Adquirir Ahora
+                </button>
+            </div>
+            <div class="flex-1">
+                <div class="grid grid-cols-2 gap-4 text-sm text-gray-300">
+                    <div class="flex items-center gap-2"><span class="material-symbols-outlined text-green-500">check</span> App Web Instalada</div>
+                    <div class="flex items-center gap-2"><span class="material-symbols-outlined text-green-500">check</span> Base de Datos Incluida</div>
+                    <div class="flex items-center gap-2"><span class="material-symbols-outlined text-green-500">check</span> Dominio .vercel.app</div>
+                    <div class="flex items-center gap-2"><span class="material-symbols-outlined text-green-500">check</span> Soporte Técnico</div>
+                    <div class="flex items-center gap-2"><span class="material-symbols-outlined text-green-500">check</span> Manual de Uso</div>
+                    <div class="flex items-center gap-2"><span class="material-symbols-outlined text-green-500">check</span> Actualizaciones</div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- ========================================== -->
-    <!-- VENTANA MODAL (OCULTA POR DEFECTO 'hidden') -->
-    <!-- ========================================== -->
+    <footer class="py-8 border-t border-white/5 text-center text-gray-500 text-sm mt-10">
+        <p>&copy; 2026 SaaS Rifa. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- MODAL DE COMPRA -->
     <div id="purchase-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        
-        <!-- Fondo Oscuro (Click para cerrar) -->
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closePurchaseModal()"></div>
-        
-        <!-- Contenido de la Ventana -->
         <div class="relative w-full max-w-md bg-surface-dark rounded-2xl p-8 shadow-2xl border border-primary/20 max-h-[90vh] overflow-y-auto">
-            
-            <!-- Botón Cerrar (X) -->
             <button onclick="closePurchaseModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
                 <span class="material-symbols-outlined">close</span>
             </button>
 
-            <h2 class="text-2xl font-bold mb-1">Activa tu Software</h2>
-            <p class="text-gray-400 text-sm mb-6">Realiza el pago a los datos indicados a continuación.</p>
+            <h2 class="text-2xl font-bold mb-1">Activar Licencia</h2>
+            <p class="text-gray-400 text-sm mb-6">Transfiere el monto exacto para recibir tus links.</p>
 
-            <!-- SECCIÓN DE DATOS BANCARIOS (CON BOTONES DE COPIAR) -->
+            <!-- DATOS BANCARIOS -->
             <div class="bg-black/40 p-5 rounded-xl border border-primary/20 mb-6">
-                <div class="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
-                    <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
-                    <h4 class="text-sm font-bold text-white uppercase tracking-wider">Datos para el Pago</h4>
-                </div>
-
                 <div class="space-y-3 text-sm">
-                    <!-- Banco -->
                     <div class="flex justify-between items-center group">
                         <div class="text-gray-400">Banco:</div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono text-white font-bold">0105 (Mercantil)</span>
-                            <button onclick="copyText('0105', this)" class="text-gray-500 hover:text-primary transition-colors p-1 rounded-md hover:bg-white/5" title="Copiar Banco">
-                                <span class="material-symbols-outlined text-lg">content_copy</span>
-                            </button>
-                        </div>
+                        <div class="flex items-center gap-3"><span class="font-mono text-white font-bold">0105 (Mercantil)</span><button onclick="copyText('0105', this)" class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined text-lg">content_copy</span></button></div>
                     </div>
-                    <!-- Teléfono -->
                     <div class="flex justify-between items-center group">
                         <div class="text-gray-400">Teléfono:</div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono text-white font-bold">0424-3454032</span>
-                            <button onclick="copyText('04243454032', this)" class="text-gray-500 hover:text-primary transition-colors p-1 rounded-md hover:bg-white/5" title="Copiar Teléfono">
-                                <span class="material-symbols-outlined text-lg">content_copy</span>
-                            </button>
-                        </div>
+                        <div class="flex items-center gap-3"><span class="font-mono text-white font-bold">0424-345-4032</span><button onclick="copyText('04243454032', this)" class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined text-lg">content_copy</span></button></div>
                     </div>
-                    <!-- RIF -->
                     <div class="flex justify-between items-center group">
-                        <div class="text-gray-400">Cédula/RIF:</div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono text-white font-bold">J-506818817</span>
-                            <button onclick="copyText('J506818817', this)" class="text-gray-500 hover:text-primary transition-colors p-1 rounded-md hover:bg-white/5" title="Copiar RIF">
-                                <span class="material-symbols-outlined text-lg">content_copy</span>
-                            </button>
-                        </div>
+                        <div class="text-gray-400">RIF:</div>
+                        <div class="flex items-center gap-3"><span class="font-mono text-white font-bold">J-506818817</span><button onclick="copyText('J506818817', this)" class="text-gray-500 hover:text-primary"><span class="material-symbols-outlined text-lg">content_copy</span></button></div>
                     </div>
-                    <!-- Separador -->
                     <div class="border-t border-white/10 my-2"></div>
-                    <!-- Monto (DINÁMICO) -->
-                    <div class="flex justify-between items-center bg-primary/10 -mx-2 px-2 py-2 rounded-lg border border-primary/20">
-                        <div class="text-primary font-bold">Monto a Pagar:</div>
+                    <!-- MONTO -->
+                    <div class="flex justify-between items-center bg-primary/10 -mx-2 px-3 py-2 rounded-lg border border-primary/20">
+                        <div class="text-primary font-bold">Monto Exacto:</div>
                         <div class="flex items-center gap-3">
-                            <span id="display-saas-price" class="font-mono text-white font-extrabold text-lg">--</span>
-                            <button id="btn-copy-price" class="text-primary hover:text-white transition-colors p-1 rounded-md hover:bg-primary/20" title="Copiar Monto">
-                                <span class="material-symbols-outlined text-lg">content_copy</span>
-                            </button>
+                            <span id="display-saas-price" class="font-mono text-white font-extrabold text-lg">Cargando...</span>
+                            <button id="btn-copy-price" class="text-primary hover:text-white"><span class="material-symbols-outlined text-lg">content_copy</span></button>
                         </div>
                     </div>
-                      <button onclick="copyAllSaasData(this)" class="w-full mt-4 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 p-2.5 rounded-lg transition-all font-bold text-xs uppercase tracking-wider group">
-                    <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">content_paste</span>
-                    Copiar Todos los Datos
+                    <button onclick="copyAllSaasData(this)" class="w-full mt-4 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 p-2.5 rounded-lg transition-all font-bold text-xs uppercase tracking-wider">
+                        <span class="material-symbols-outlined text-lg">content_paste</span> Copiar Todo
                     </button>
                 </div>
             </div>
 
-            <!-- FORMULARIO DE REPORTE -->
+            <!-- FORMULARIO -->
             <form id="saas-form" class="space-y-4">
                 <input type="text" id="buyer-name" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Tu Nombre Completo">
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="tel" id="buyer-ci" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Cédula (V123...)">
+                    <input type="tel" id="buyer-ci" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Cédula">
                     <input type="tel" id="buyer-phone" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Teléfono">
                 </div>
-                <input type="email" id="buyer-email" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Tu Correo (Aquí llegarán los accesos)">
-                
+                <input type="email" id="buyer-email" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Tu Correo">
                 <hr class="border-white/10">
-                
-                <input type="text" id="raffle-name" required class="w-full bg-primary/10 border border-primary/30 rounded-lg p-3 text-white focus:border-primary outline-none font-bold placeholder-gray-500" placeholder="Nombre de tu Rifa (Ej: Gran Sorteo 2026)">
-                
-                <div class="pt-2">
-                    <label class="text-xs text-gray-400 uppercase font-bold">Fecha del Pago</label>
-                    <input type="date" id="payment-date" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none">
+                <input type="text" id="raffle-name" required class="w-full bg-primary/10 border border-primary/30 rounded-lg p-3 text-white focus:border-primary outline-none font-bold" placeholder="Nombre de tu Rifa (Ej: Gran Sorteo)">
+                <div class="grid grid-cols-2 gap-4 pt-2">
+                    <div><label class="block text-xs text-gray-400 mb-1 font-bold">Fecha Pago</label><input type="date" id="payment-date" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none"></div>
+                    <div><label class="block text-xs text-gray-400 mb-1 font-bold">Referencia</label><input type="tel" id="payment-ref" required maxlength="12" class="w-full bg-black/30 border border-primary/50 rounded-lg p-3 text-white focus:border-primary outline-none text-center" placeholder="123456"></div>
                 </div>
-
-                <div class="pt-2">
-                    <label class="text-xs text-gray-400 uppercase font-bold">Referencia de Pago</label>
-                    <input type="tel" id="payment-ref" required maxlength="12" class="w-full bg-black/30 border border-primary/50 rounded-lg p-3 text-white focus:border-primary outline-none text-center font-mono text-lg tracking-widest" placeholder="123456">
-                </div>
-
-                <button type="submit" class="w-full bg-primary hover:bg-green-400 text-background-dark font-bold py-4 rounded-xl transition-all shadow-lg mt-2">
-                    VERIFICAR Y ACTIVAR
-                </button>
+                <button type="submit" class="w-full bg-primary hover:bg-green-400 text-background-dark font-bold py-4 rounded-xl transition-all shadow-lg mt-4">VERIFICAR Y ACTIVAR</button>
             </form>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- WhatsApp -->
+    <a href="https://wa.me/584243454032?text=Hola,%20quiero%20comprar%20la%20plataforma%20de%20rifas." target="_blank" class="fixed bottom-6 right-6 z-50 group flex items-center justify-center">
+        <span class="absolute right-16 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg whitespace-nowrap pointer-events-none">¿Dudas?</span>
+        <span class="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75 animate-ping"></span>
+        <div class="relative bg-green-500 hover:bg-green-400 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110">
+            <svg class="w-8 h-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.4 5.7-8.7 16.3-30.3 1-2.1 .5-4-.3-5.6-1-1.9-8.8-21.2-12-29-3.1-7.6-6.3-6.5-8.8-6.5s-5.1-.2-7.8-.2c-2.7 0-7.3 1-11.1 5.3-3.8 4.2-14.5 14-14.5 35.3 0 21.3 15.6 41.7 17.8 44.5 2.2 2.8 30.7 44.8 74.3 62.9 30.5 12.6 36.6 10.1 43.1 9.4 10.5-1.1 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
+        </div>
+    </a>
+
     <script src="landing.js"></script>
 </body>
 </html>
