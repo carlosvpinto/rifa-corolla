@@ -210,70 +210,89 @@ app.get('/api/master/customers', async (req, res) => {
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- B. VENTA SAAS ---
-
-// A. MÓDULO SAAS (VENTA DEL SOFTWARE) - CON CONVERSIÓN
 // ==========================================
-// A. MÓDULO SAAS (VENTA DEL SOFTWARE)
-// ==========================================
-// ==========================================
-// A. MÓDULO SAAS (VENTA DEL SOFTWARE)
+// A. MÓDULO SAAS (VENTA DEL SOFTWARE MULTIMONEDA)
 // ==========================================
 app.post('/api/saas/buy', async (req, res) => {
   try {
-    const { buyerData, raffleName, paymentRef, amount, paymentDate } = req.body;
+    // 1. Recibimos 'method' y 'paypalOrderID'
+    const { buyerData, raffleName, paymentRef, amount, paymentDate, method, paypalOrderID } = req.body;
 
-    // 1. Validaciones
-    if (!buyerData || !raffleName || !paymentRef) {
+    if (!buyerData || !raffleName) {
         return res.status(400).json({ error: "Faltan datos de la compra." });
     }
 
-    // 2. Anti-Doble Gasto
-    const refCheck = await db.collection('saas_customers').where('paymentRef', '==', paymentRef).get();
-    if (!refCheck.empty) return res.status(409).json({ error: "⛔ Referencia ya utilizada." });
-
-    // 3. Nombre Único
+    // 2. Anti-Fraude: Nombre Único
     const newRaffleId = generateId(raffleName);
     const idCheck = await RAFFLES_COLLECTION.doc(newRaffleId).collection('config').doc('general').get();
     if (idCheck.exists) return res.status(409).json({ error: "⛔ Nombre de rifa ya existe." });
 
-    // 4. Calcular Montos
+    // 3. Cálculos de Tasa
     const currentRate = await getExchangeRate();
-    if (!currentRate) return res.status(500).json({ error: "Error Tasa BCV." });
+    if (!currentRate) console.warn("⚠️ No se pudo obtener tasa BCV (Solo relevante para Bs)");
 
     const amountUSD = parseFloat(amount);
-    const amountVES = amountUSD * currentRate;
+    const amountVES = amountUSD * (currentRate || 0);
 
-    // 5. Verificar Pago (Cuenta Maestra)
-    const masterCreds = {
-        merchantId: process.env.MERCANTIL_MERCHANT_ID,
-        clientId: process.env.MERCANTIL_CLIENT_ID,
-        secretKey: process.env.MERCANTIL_SECRET_KEY,
-        integratorId: process.env.MERCANTIL_INTEGRATOR_ID,
-        terminalId: process.env.MERCANTIL_TERMINAL_ID,
-        phoneNumber: process.env.MERCANTIL_PHONE_NUMBER
-    };
+    // =====================================================
+    // 4. VERIFICACIÓN DEL PAGO (DECISIÓN: PAYPAL O MERCANTIL)
+    // =====================================================
+    
+    if (method === 'paypal') {
+        // --- CASO PAYPAL ---
+        console.log(`✅ Verificando PayPal ID: ${paypalOrderID}`);
+        
+        // Validación básica: Que traiga el ID de la transacción
+        if (!paypalOrderID) {
+            return res.status(400).json({ error: "Falta el ID de transacción de PayPal" });
+        }
+        
+        // (Opcional Avanzado: Aquí podrías usar tu SECRET KEY para preguntar a PayPal si el pago es real)
+        // Por ahora confiamos en el éxito del Frontend SDK.
 
-    const dateToCheck = getVenezuelaDate(paymentDate);
-    console.log(`Verificando SaaS: Ref ${paymentRef} | Bs. ${amountVES.toFixed(2)}`);
+    } else {
+        // --- CASO PAGO MÓVIL (MERCANTIL) ---
+        if (!paymentRef) return res.status(400).json({ error: "Falta la referencia bancaria" });
 
-    const bankResult = await verifyMercantilPayment(
-        masterCreds, buyerData.ci, buyerData.phone, paymentRef, amountVES, dateToCheck
-    );
+        // Anti-Doble Gasto (Solo para pago móvil local)
+        const refCheck = await db.collection('saas_customers').where('paymentRef', '==', paymentRef).get();
+        if (!refCheck.empty) return res.status(409).json({ error: "⛔ Referencia ya utilizada." });
 
-    if (!bankResult.success) {
-        return res.status(402).json({ error: `Pago no encontrado. Se esperaban Bs. ${amountVES.toFixed(2)}` });
+        const masterCreds = {
+            merchantId: process.env.MERCANTIL_MERCHANT_ID,
+            clientId: process.env.MERCANTIL_CLIENT_ID,
+            secretKey: process.env.MERCANTIL_SECRET_KEY,
+            integratorId: process.env.MERCANTIL_INTEGRATOR_ID,
+            terminalId: process.env.MERCANTIL_TERMINAL_ID,
+            phoneNumber: process.env.MERCANTIL_PHONE_NUMBER
+        };
+
+        const dateToCheck = getVenezuelaDate(paymentDate);
+        console.log(`Verificando SaaS Mercantil: Ref ${paymentRef} | Bs. ${amountVES.toFixed(2)}`);
+
+        const bankResult = await verifyMercantilPayment(
+            masterCreds, buyerData.ci, buyerData.phone, paymentRef, amountVES, dateToCheck
+        );
+
+        if (!bankResult.success) {
+            return res.status(402).json({ error: `Pago no encontrado. Se esperaban Bs. ${amountVES.toFixed(2)}` });
+        }
     }
 
-    // 6. Crear Instancia
-    //const adminPin = "2026"; 
-    const adminPin = Math.floor(1000 + Math.random() * 9000).toString(); // Descomenta para PIN aleatorio
-
+    // =====================================================
+    // 5. CREACIÓN DE LA CUENTA (IGUAL PARA AMBOS)
+    // =====================================================
+   // const adminPin = "2026"; 
+   
+    // 🔴 GENERAR PIN ALEATORIO DE 4 DÍGITOS
+    const adminPin = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    // Configuración Inicial
     const newConfig = {
         raffleTitle: raffleName,
         companyName: buyerData.companyName || raffleName,
         ownerEmail: buyerData.email,
-        ownerPhone: buyerData.phone,
+        ownerPhone: buyerData.phone || "N/A",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         totalTickets: 1000, ticketPrice: 10, currency: "$", adminPin: adminPin,
         isClosed: false, verificationMode: 'manual', plan: "SAAS_LICENSE_V1"
@@ -281,51 +300,43 @@ app.post('/api/saas/buy', async (req, res) => {
 
     await RAFFLES_COLLECTION.doc(newRaffleId).collection('config').doc('general').set(newConfig);
     
+    // Libro Maestro
     await db.collection('saas_customers').doc(newRaffleId).set({
         clientId: newRaffleId, ...buyerData, 
-        paymentRef, amountPaidUSD: amountUSD, amountPaidVES: amountVES, exchangeRate: currentRate,
-        initialPin: adminPin, purchaseDate: admin.firestore.FieldValue.serverTimestamp()
+        paymentRef: paymentRef || paypalOrderID, // Guardamos la Ref o el ID de PayPal
+        paymentMethod: method || 'mercantil',
+        amountPaidUSD: amountUSD,
+        amountPaidVES: amountVES,
+        exchangeRate: currentRate || 0,
+        initialPin: adminPin,
+        purchaseDate: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // 7. ENVIAR CORREOS CON ACCESOS
-    
-    // ⚠️ IMPORTANTE: Cuando subas a producción, cambia esto por tu dominio Vercel
-    // const APP_URL = "https://rifa-corolla.vercel.app";
-    const APP_URL = "http://127.0.0.1:5501"; 
+    // 6. ENVIAR CORREOS
+    // ⚠️ CAMBIA ESTO:
+    const APP_URL = "http://127.0.0.1:5501"; // URL LOCAL
+    // const APP_URL = "https://rifa-carros-corolla.vercel.app"; // PRODUCCIÓN
 
     const clientMailOptions = {
         from: `Soporte Software <${process.env.EMAIL_USER}>`,
         to: buyerData.email,
-        subject: `🚀 Activado: ${raffleName} - Tus Accesos`,
+        subject: `🚀 Activado: ${raffleName}`,
         html: `
             <div style="font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4;">
                <div style="background: #fff; padding: 30px; border-radius: 10px; border-top: 5px solid #13ec5b;">
                   <h1 style="color: #102216; margin-top: 0;">¡Licencia Activada!</h1>
-                  <p>Hola <strong>${buyerData.name}</strong>, tu plataforma está lista para usarse.</p>
+                  <p>Hola <strong>${buyerData.name}</strong>, pago recibido vía ${method === 'paypal' ? 'PayPal' : 'Pago Móvil'}.</p>
                   
                   <div style="background: #eefbee; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                      <h3 style="margin-top: 0; color: #13ec5b; border-bottom: 1px solid #13ec5b; padding-bottom: 10px;">🔑 TUS CREDENCIALES</h3>
-                      
-                      <p style="margin-bottom: 5px;"><strong>1. Panel Administrativo (Dashboard):</strong><br>
-                      <span style="font-size: 12px; color: #666;">Aquí configuras precios, fotos y ves las ventas.</span><br>
-                      <a href="${APP_URL}/admin.html?id=${newRaffleId}" style="color: #007bff; font-weight: bold;">${APP_URL}/admin.html?id=${newRaffleId}</a></p>
-                      
-                      <p style="margin-bottom: 5px; margin-top: 15px;"><strong>2. Página de Ventas (Público):</strong><br>
-                      <span style="font-size: 12px; color: #666;">Comparte este link con tus clientes.</span><br>
-                      <a href="${APP_URL}/index.html?id=${newRaffleId}" style="color: #007bff; font-weight: bold;">${APP_URL}/index.html?id=${newRaffleId}</a></p>
-                      
-                      <hr style="border: 0; border-top: 1px solid #ccc; margin: 15px 0;">
-                      
-                      <p style="font-size: 16px;"><strong>PIN DE ACCESO:</strong> <span style="background: #fff; padding: 5px 10px; border-radius: 4px; font-weight: bold; border: 1px solid #ccc;">${adminPin}</span></p>
-                  </div>
-
-                  <div style="text-align: center; margin-top: 30px;">
-                      <a href="${APP_URL}/manual.html" style="background-color: #102216; color: #fff; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold; display: inline-block;">
-                        📘 Descargar / Ver Manual de Usuario
-                      </a>
+                      <h3 style="margin-top: 0; color: #13ec5b;">🔑 Tus Credenciales</h3>
+                      <p><strong>Admin:</strong> <a href="${APP_URL}/admin.html?id=${newRaffleId}">${APP_URL}/admin.html?id=${newRaffleId}</a></p>
+                      <p><strong>Web:</strong> <a href="${APP_URL}/index.html?id=${newRaffleId}">${APP_URL}/index.html?id=${newRaffleId}</a></p>
+                      <p><strong>PIN:</strong> ${adminPin}</p>
                   </div>
                   
-                  <p style="text-align: center; font-size: 12px; color: #999; margin-top: 20px;">Guarda este correo en un lugar seguro.</p>
+                  <div style="text-align: center; margin-top: 30px;">
+                      <a href="${APP_URL}/manual.html" style="background-color: #102216; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">📘 Ver Manual</a>
+                  </div>
                </div>
             </div>
         `
@@ -334,14 +345,8 @@ app.post('/api/saas/buy', async (req, res) => {
     const adminMailOptions = {
         from: `Ventas <${process.env.EMAIL_USER}>`,
         to: process.env.EMAIL_USER, 
-        subject: `💰 VENTA SAAS: $${amountUSD}`,
-        html: `
-            <h1>Venta Realizada</h1>
-            <p><strong>Cliente:</strong> ${buyerData.name}</p>
-            <p><strong>ID:</strong> ${newRaffleId}</p>
-            <p><strong>Monto:</strong> $${amountUSD} (Bs. ${amountVES.toFixed(2)})</p>
-            <p><strong>Ref:</strong> ${paymentRef}</p>
-        `
+        subject: `💰 VENTA SAAS (${method.toUpperCase()}): $${amountUSD}`,
+        html: `<h1>Venta Realizada</h1><p>Cliente: ${buyerData.name}</p><p>ID: ${newRaffleId}</p><p>Método: ${method}</p><p>Ref: ${paymentRef || paypalOrderID}</p>`
     };
     
     try {
@@ -349,7 +354,6 @@ app.post('/api/saas/buy', async (req, res) => {
             transporter.sendMail(clientMailOptions),
             transporter.sendMail(adminMailOptions)
         ]);
-        console.log("Correos enviados.");
     } catch (e) { console.error("Error email:", e); }
 
     res.json({ success: true, redirectUrl: `${APP_URL}/admin.html?id=${newRaffleId}` });
