@@ -249,6 +249,15 @@
                                 <input type="text" id="payment-ci-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: J-123456789">
                             </div>
                         </div>
+
+                        <div>
+                            <label class="block text-xs text-yellow-400 mb-1">Binance Pay (Email/ID)</label>
+                            <input type="text" id="binance-email-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-yellow-400 placeholder-gray-600" placeholder="Opcional">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-purple-400 mb-1">Zelle (Email/Tlf)</label>
+                            <input type="text" id="zelle-email-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-purple-400 placeholder-gray-600" placeholder="Opcional">
+                        </div>
                     </div>
 
                     <!-- BOTÓN GUARDAR -->
@@ -670,6 +679,26 @@
             <button onclick="closeWinnerModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
                 <span class="material-symbols-outlined">close</span>
             </button>
+        </div>
+
+    
+
+    </div>
+
+    <!-- MODAL PARA VER RECIBO (FALTABA ESTO) -->
+    <div id="receipt-modal" class="fixed inset-0 z-[110] flex items-center justify-center hidden bg-black/95 backdrop-blur-sm" onclick="closeReceiptModal()">
+        <!-- Contenedor de la imagen -->
+        <div class="relative max-w-md w-full p-2" onclick="event.stopPropagation()">
+            
+            <!-- Botón Cerrar -->
+            <button onclick="closeReceiptModal()" class="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors bg-white/10 rounded-full p-1">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+            
+            <!-- La Imagen -->
+            <img id="receipt-image" src="" class="w-full h-auto max-h-[80vh] object-contain rounded-lg shadow-2xl border border-white/20 bg-black" alt="Comprobante de Pago">
+            
+            <p class="text-center text-gray-500 text-xs mt-2">Haz clic fuera de la imagen para cerrar</p>
         </div>
     </div>
 

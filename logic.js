@@ -1,3 +1,8 @@
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+// AGREGAMOS STORAGE AQUÍ:
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
 // 1. OBTENER ID DEL CLIENTE DE LA URL
 const urlParams = new URLSearchParams(window.location.search);
 const CLIENT_ID = urlParams.get('id') || 'demo'; // 'demo' es tu rifa personal
@@ -28,6 +33,11 @@ let sliderImages = [];
 let currentSlide = 0;
 let slideInterval;
 
+// VARIABLES GLOBALES NUEVAS
+let BINANCE_EMAIL = "";
+let ZELLE_EMAIL = "";
+let CURRENT_METHOD = "pago_movil"; // pago_movil, binance, zelle
+
 let EXCHANGE_RATE = 0; // Tasa del día
 
 // ==========================================
@@ -45,12 +55,21 @@ const btnCloseModal = document.getElementById('btn-close-modal');
 const backdrop = document.getElementById('modal-backdrop');
 const errorModal = document.getElementById('payment-error-modal');
 
-// ==========================================
-// 3. CARGAR CONFIGURACIÓN DESDE EL SERVIDOR
-// ==========================================
-// ==========================================
-// 3. CARGAR CONFIGURACIÓN (CON MANEJO DE ERRORES OFFLINE)
-// ==========================================
+
+
+// 🔴 TUS CREDENCIALES
+const firebaseConfig = {
+  apiKey: "AIzaSyC6ogR8wwRSiPnZBUkPrkhXaFGZA1e_Krs",
+  authDomain: "rifa-corolla.firebaseapp.com",
+  projectId: "rifa-corolla",
+  storageBucket: "rifa-corolla.firebasestorage.app", 
+  messagingSenderId: "715627839956",
+  appId: "1:715627839956:web:90261c05c603e949559641",
+  measurementId: "G-W347VQ8NMN"
+};
+
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
 // ==========================================
 // 3. CARGAR CONFIGURACIÓN + TASA DE CAMBIO
 // ==========================================
@@ -107,6 +126,21 @@ async function loadRaffleConfig() {
             // Si conecta pero no hay fotos, quitamos el loader de la imagen
             if(heroLoader) heroLoader.classList.add('hidden');
         }
+
+          // G. CARGAR BINANCE Y ZELLE
+            if (data.binanceEmail) {
+                BINANCE_EMAIL = data.binanceEmail;
+                const tabBinance = document.getElementById('tab-binance');
+                if(tabBinance) tabBinance.classList.remove('hidden');
+            }
+            if (data.zelleEmail) {
+                ZELLE_EMAIL = data.zelleEmail;
+                const tabZelle = document.getElementById('tab-zelle');
+                if(tabZelle) tabZelle.classList.remove('hidden');
+            }
+
+            // Inicializar la vista en Pago Móvil
+            setPaymentMethod('pago_movil');
 
         // --- E. TEXTOS (TÍTULO Y CÓDIGO) ---
         const titleText = data.raffleTitle || "Gran Rifa";
@@ -200,6 +234,96 @@ async function loadRaffleConfig() {
     }
 }
 
+// ==========================================
+// 9. LÓGICA DE PESTAÑAS DE PAGO
+// ==========================================
+// CORRECCIÓN PUNTOS 1 y 3: Inyectar datos con botones de copiar
+// ==========================================
+// 9. LÓGICA DE PESTAÑAS DE PAGO (CORREGIDA)
+// ==========================================
+
+// ==========================================
+// 9. LÓGICA DE PESTAÑAS (SetPaymentMethod)
+// ==========================================
+window.setPaymentMethod = (method) => {
+    CURRENT_METHOD = method;
+    const infoBox = document.getElementById('payment-info-box');
+    const labelRef = document.getElementById('label-ref');
+    const inputRef = document.getElementById('input-ref');
+    const btnCopyAll = document.getElementById('btn-copy-all');
+    
+    // Recalcular montos al cambiar de pestaña
+    const { usd, ves } = calculateAmounts();
+    
+    updateModalPrice(usd, ves);
+
+    // 1. Resetear estilos tabs
+    ['pm', 'binance', 'zelle'].forEach(m => {
+        const tab = document.getElementById(`tab-${m}`);
+        const target = (method === 'pago_movil') ? 'pm' : method;
+        if(tab) {
+            tab.className = (m === target) 
+                ? "flex-1 py-2 text-xs font-bold rounded-lg bg-surface-highlight text-white border border-primary/50 transition-all shadow-lg"
+                : "flex-1 py-2 text-xs font-bold rounded-lg bg-black/30 text-gray-500 border border-transparent hover:text-white transition-all";
+        }
+    });
+
+    // 2. Contenido dinámico
+    if (method === 'pago_movil') {
+        infoBox.innerHTML = `
+            <div class="flex justify-between items-center bg-black/20 p-2 rounded"><span class="text-gray-400">Banco:</span> <span class="font-bold text-white font-mono">${BANK_NAME} (${BANK_CODE})</span></div>
+            <div class="flex justify-between items-center bg-black/20 p-2 rounded"><span class="text-gray-400">Tlf:</span> <span class="font-bold text-white font-mono">${PAY_PHONE}</span></div>
+            <div class="flex justify-between items-center bg-black/20 p-2 rounded"><span class="text-gray-400">CI/RIF:</span> <span class="font-bold text-white font-mono">${PAY_CI}</span></div>
+        `;
+        labelRef.innerText = "Referencia Bancaria (6 últimos)";
+        inputRef.value = ""; 
+        inputRef.type = "tel"; 
+        inputRef.setAttribute("inputmode", "numeric");
+        inputRef.maxLength = 12; 
+        inputRef.placeholder = "123456";
+        inputRef.oninput = function() { this.value = this.value.replace(/[^0-9]/g, ''); };
+        if(btnCopyAll) btnCopyAll.classList.remove('hidden');
+
+    } else if (method === 'binance') {
+        infoBox.innerHTML = `
+            <div class="text-center py-2">
+                <span class="text-yellow-400 font-bold block mb-2 text-lg">BINANCE PAY</span>
+                <div class="bg-yellow-400/10 border border-yellow-400/30 p-3 rounded-lg break-all">
+                    <span class="text-white font-mono text-sm">${BINANCE_EMAIL}</span>
+                </div>
+                <button onclick="window.copiar('${BINANCE_EMAIL}')" class="mt-3 text-xs text-yellow-400 hover:text-white underline">Copiar Correo/ID</button>
+            </div>
+        `;
+        labelRef.innerText = "Tu ID de Binance o Correo";
+        inputRef.value = "";
+        inputRef.type = "text";
+        inputRef.removeAttribute("inputmode");
+        inputRef.maxLength = 50;
+        inputRef.placeholder = "ejemplo@gmail.com";
+        inputRef.oninput = null;
+        if(btnCopyAll) btnCopyAll.classList.add('hidden');
+
+    } else if (method === 'zelle') {
+        infoBox.innerHTML = `
+            <div class="text-center py-2">
+                <span class="text-purple-400 font-bold block mb-2 text-lg">ZELLE</span>
+                <div class="bg-purple-400/10 border border-purple-400/30 p-3 rounded-lg break-all">
+                    <span class="text-white font-mono text-sm">${ZELLE_EMAIL}</span>
+                </div>
+                <button onclick="window.copiar('${ZELLE_EMAIL}')" class="mt-3 text-xs text-purple-400 hover:text-white underline">Copiar Zelle</button>
+            </div>
+        `;
+        labelRef.innerText = "Nombre del Titular Zelle";
+        inputRef.value = "";
+        inputRef.type = "text";
+        inputRef.removeAttribute("inputmode");
+        inputRef.maxLength = 50;
+        inputRef.placeholder = "Nombre Apellido";
+        inputRef.oninput = null;
+        if(btnCopyAll) btnCopyAll.classList.add('hidden');
+    }
+};
+
 // Bloquear UI si está cerrado
 function lockRaffleUI() {
     if (btnOpenModal) {
@@ -216,31 +340,85 @@ function lockRaffleUI() {
 }
 
 // ==========================================
-// 4. LÓGICA DE INTERFAZ (UI)
+// 4. LÓGICA DE INTERFAZ (UI) - ACTUALIZADA
+// ==========================================
+// ==========================================
+// NUEVA FUNCIÓN AUXILIAR: CALCULAR MONTOS
+// ==========================================
+function calculateAmounts() {
+    let valUSD, valVES;
+    const rawTotal = quantity * TICKET_PRICE;
+
+    if (CURRENCY === 'Bs.' || CURRENCY === 'Bs') {
+        // Si el precio base es Bs.
+        valVES = rawTotal;
+        valUSD = EXCHANGE_RATE > 0 ? valVES / EXCHANGE_RATE : 0;
+    } else {
+        // Si el precio base es $ (o cualquier otro)
+        valUSD = rawTotal;
+        valVES = valUSD * EXCHANGE_RATE;
+    }
+    return { usd: valUSD, ves: valVES };
+}
+
+// ==========================================
+// 4. LÓGICA DE INTERFAZ (UI) - ACTUALIZADA
 // ==========================================
 function updateUI() {
     qtyDisplay.innerText = quantity;
     
-    // 🔴 CÁLCULO DUAL
-    const totalUSD = quantity * TICKET_PRICE;
-    // Si la tasa cargó, calculamos Bs, si no, mostramos solo $
-    const totalVES = EXCHANGE_RATE > 0 ? (totalUSD * EXCHANGE_RATE).toFixed(2) : "...";
+    // Usamos la nueva función de cálculo
+    const { usd, ves } = calculateAmounts();
     
-    // Mostrar: "$10 (Bs. 500.00)"
-    const textTotal = `$${totalUSD} (Bs. ${totalVES})`;
+    // Texto principal
+    const totalString = `$${usd.toFixed(2)} / Bs. ${ves.toFixed(2)}`;
+    
+    totalDisplay.innerText = totalString;
+    
+    // Actualizar Modal si está abierto
+    if (!document.getElementById('checkout-modal').classList.contains('hidden')) {
+        updateModalPrice(usd, ves);
+    }
 
-    totalDisplay.innerText = textTotal;
-    if (typeof modalTotal !== 'undefined') modalTotal.innerText = textTotal;
-
-    // Actualizar precio unitario en la tarjeta
-    if (typeof unitPriceDisplay !== 'undefined') {
-        const unitVES = EXCHANGE_RATE > 0 ? (TICKET_PRICE * EXCHANGE_RATE).toFixed(2) : "...";
-        unitPriceDisplay.innerHTML = `$${TICKET_PRICE}<br><span style="font-size:0.6em; color:#ccc">Bs. ${unitVES}</span>`;
+    // Precio Unitario (Tarjeta)
+    if (unitPriceDisplay) {
+        // Si la moneda es Bs, mostramos Bs grande y $ pequeño
+        if (CURRENCY === 'Bs.' || CURRENCY === 'Bs') {
+            const unitUSD = EXCHANGE_RATE > 0 ? TICKET_PRICE / EXCHANGE_RATE : 0;
+            unitPriceDisplay.innerHTML = `Bs. ${TICKET_PRICE.toFixed(2)}<br><span class="text-sm font-normal text-gray-400">$${unitUSD.toFixed(2)}</span>`;
+        } else {
+            // Si es $, mostramos $ grande y Bs pequeño
+            const unitVES = TICKET_PRICE * EXCHANGE_RATE;
+            unitPriceDisplay.innerHTML = `$${TICKET_PRICE.toFixed(2)}<br><span class="text-sm font-normal text-gray-400">Bs. ${unitVES.toFixed(2)}</span>`;
+        }
     }
 
     if (quantity <= 1) btnMinus.classList.add('opacity-50', 'cursor-not-allowed');
     else btnMinus.classList.remove('opacity-50', 'cursor-not-allowed');
 }
+
+// Función auxiliar para actualizar precio del modal
+function updateModalPrice(usd, ves) {
+    const modalTotal = document.getElementById('modal-total');
+    if (!modalTotal) return;
+
+    if (CURRENT_METHOD === 'pago_movil') {
+        modalTotal.innerText = `Bs. ${ves.toFixed(2)}`;
+        modalTotal.classList.add('text-primary'); 
+        modalTotal.classList.remove('text-yellow-400', 'text-purple-400');
+    } else {
+        modalTotal.innerText = `$${usd.toFixed(2)}`;
+        // Color según método
+        if (CURRENT_METHOD === 'binance') {
+            modalTotal.classList.add('text-yellow-400');
+            modalTotal.classList.remove('text-primary', 'text-purple-400');
+        } else {
+            modalTotal.classList.add('text-purple-400');
+            modalTotal.classList.remove('text-primary', 'text-yellow-400');
+        }
+    }
+}
+
 
 btnMinus.onclick = () => { if (quantity > 1) { quantity--; updateUI(); } };
 btnPlus.onclick = () => { if (quantity < MAX_LIMIT) { quantity++; updateUI(); } };
@@ -391,15 +569,17 @@ window.copiar = (texto) => {
     showToast(`Copiado: ${texto}`);
 };
 
+// ==========================================
+// MODIFICAR COPY ALL TAMBIÉN
+// ==========================================
 window.copyAllPaymentData = () => {
-    const currentTotal = (quantity * TICKET_PRICE).toFixed(2);
+    // Usamos el cálculo nuevo
+    const { ves } = calculateAmounts();
+    const currentTotal = ves.toFixed(2);
     
-    // Usamos las variables globales cargadas desde el servidor
-    const paymentInfo = `Banco: ${BANK_NAME} (${BANK_CODE})\nTeléfono: ${PAY_PHONE}\nCédula/RIF: ${PAY_CI}\nMonto a Pagar: ${CURRENCY} ${currentTotal}`;
+    const paymentInfo = `Banco: ${BANK_NAME} (${BANK_CODE})\nTeléfono: ${PAY_PHONE}\nCédula/RIF: ${PAY_CI}\nMonto a Pagar: Bs. ${currentTotal}`;
     
-    navigator.clipboard.writeText(paymentInfo)
-        .then(() => showToast("¡Datos copiados!"))
-        .catch(() => showToast("Error al copiar"));
+    navigator.clipboard.writeText(paymentInfo).then(() => showToast("¡Datos copiados!")).catch(() => showToast("Error al copiar"));
 };
 
 // Modal de Error
@@ -437,24 +617,40 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     
     const btnText = document.getElementById('btn-text');
     const originalText = btnText.innerText;
-    
-    btnText.innerText = "Verificando con el Banco...";
+    btnText.innerText = "Subiendo comprobante...";
     btnText.disabled = true;
     
+    // 1. Recopilar Datos Básicos
     const ciType = document.getElementById('input-ci-type').value;
     const ciNumber = document.getElementById('input-ci-number').value;
     const fullCi = ciType + ciNumber; 
-
-    const userData = {
-        name: document.getElementById('input-name').value,
-        ci: fullCi,
-        phone: document.getElementById('input-phone').value,
-        email: document.getElementById('input-email').value, 
-        ref: document.getElementById('input-ref').value,
-        paymentDate: document.getElementById('input-date').value,
-    };
+    const fileInput = document.getElementById('receipt-upload');
+    let receiptUrl = "";
 
     try {
+        // 2. SUBIR IMAGEN (Si existe)
+        if (fileInput && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const storageRef = ref(storage, `receipts/${CLIENT_ID}/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            receiptUrl = await getDownloadURL(storageRef);
+            console.log("Comprobante subido:", receiptUrl);
+        }
+
+        btnText.innerText = "Verificando...";
+
+        const userData = {
+            name: document.getElementById('input-name').value,
+            ci: fullCi,
+            phone: document.getElementById('input-phone').value,
+            email: document.getElementById('input-email').value, 
+            ref: document.getElementById('input-ref').value,
+            paymentDate: document.getElementById('input-date').value,
+            paymentMethod: CURRENT_METHOD, 
+            receiptUrl: receiptUrl 
+        };
+
+        // 3. ENVIAR AL SERVIDOR (CORREGIDO: Sin duplicar URL)
         const response = await fetch(BACKEND_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -466,32 +662,28 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
 
         const result = await response.json();
 
+        // Manejo de Respuestas
         if (response.status === 402) {
             const totalShow = (quantity * TICKET_PRICE).toFixed(2) + " " + CURRENCY;
             showPaymentError(userData.ref, userData.paymentDate, totalShow);
             throw new Error("SILENT_FAIL"); 
         }
+        if (response.status === 409) { showToast("⚠️ Referencia ya utilizada."); throw new Error("SILENT_FAIL"); }
+        if (response.status === 403) { showToast("⛔ Sorteo cerrado."); throw new Error("SILENT_FAIL"); }
+        if (!response.ok) throw new Error(result.error || "Error servidor");
 
-        if (response.status === 409) {
-            showToast("⚠️ Esta referencia ya fue utilizada.");
-            throw new Error("SILENT_FAIL");
-        }
-
-        if (!response.ok) throw new Error(result.error || "Error del servidor");
-
-        // ÉXITO
+        // Éxito
         const successModal = document.getElementById('success-modal');
         const numbersContainer = document.getElementById('assigned-numbers-display');
         numbersContainer.innerHTML = '';
-        if(result.numbers && Array.isArray(result.numbers)) {
+        if(result.numbers) {
             result.numbers.forEach(num => {
                 const badge = document.createElement('div');
-                badge.className = "bg-primary text-background-dark font-extrabold text-xl w-12 h-12 flex items-center justify-center rounded-full shadow-[0_0_15px_rgba(19,236,91,0.4)] border border-white/20 animate-bounce-short";
+                badge.className = "bg-primary text-background-dark font-extrabold text-xl w-12 h-12 flex items-center justify-center rounded-full shadow-lg border border-white/20";
                 badge.innerText = num;
                 numbersContainer.appendChild(badge);
             });
         }
-
         modal.classList.add('hidden'); 
         successModal.classList.remove('hidden'); 
 

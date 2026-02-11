@@ -195,8 +195,9 @@ window.closeSecurityModal = () => {
 };
 
 // ==========================================
-// 5. CONFIGURACIÓN (CARGAR Y GUARDAR)
+// 5. CONFIGURACIÓN GENERAL
 // ==========================================
+// REFERENCIAS A LOS INPUTS DEL HTML
 const ticketsSelect = document.getElementById('total-tickets-select');
 const priceInput = document.getElementById('ticket-price-input');
 const currencySelect = document.getElementById('currency-select');
@@ -213,7 +214,11 @@ const bankCodeInput = document.getElementById('bank-code-input');
 const paymentPhoneInput = document.getElementById('payment-phone-input');
 const paymentCIInput = document.getElementById('payment-ci-input');
 
-// Eventos visuales
+// 🔴 AGREGAMOS LAS REFERENCIAS QUE FALTABAN AQUÍ:
+const binanceInput = document.getElementById('binance-email-input');
+const zelleInput = document.getElementById('zelle-email-input');
+
+// Eventos visuales switches
 if(statusToggle) {
     statusToggle.addEventListener('change', () => {
         statusLabel.innerText = statusToggle.checked ? "ABIERTO" : "CERRADO";
@@ -227,33 +232,31 @@ if(verificationToggle) {
     });
 }
 
+// CARGAR CONFIGURACIÓN DESDE EL SERVIDOR
 async function loadConfig() {
     try {
         const response = await fetch(`${CLIENT_API_URL}/config`);
         const data = await response.json();
         
         if (data.totalTickets) {
-            // Generales
+            // Rellenar Campos Numéricos
             if(ticketsSelect) ticketsSelect.value = data.totalTickets;
             if(priceInput) priceInput.value = data.ticketPrice;
             if(currencySelect) currencySelect.value = data.currency;
             if(manualSoldInput) manualSoldInput.value = data.manualSold || 0;
+            
+            // Rellenar Campos de Texto
             if(titleInput) titleInput.value = data.raffleTitle || "";
             if(codeInput) codeInput.value = data.drawCode || "";
 
-            // Banco
-            if(bankNameInput) bankNameInput.value = data.bankName || "Mercantil";
-            if(bankCodeInput) bankCodeInput.value = data.bankCode || "0105";
-            if(paymentPhoneInput) paymentPhoneInput.value = data.paymentPhone || "04141234567";
-            if(paymentCIInput) paymentCIInput.value = data.paymentCI || "J-123456789";
-
-            // Switches
+            // Switch Estado
             if(statusToggle) {
                 statusToggle.checked = !data.isClosed; 
                 statusToggle.dispatchEvent(new Event('change'));
             }
+
+            // Switch Verificación
             if(verificationToggle) {
-                // Si es manual, checked=false. Si es auto, checked=true
                 verificationToggle.checked = data.verificationMode !== 'manual';
                 verificationToggle.dispatchEvent(new Event('change'));
             }
@@ -264,18 +267,30 @@ async function loadConfig() {
                 renderPreviews(); 
             }
 
-            // Globales
+            // Banco Pago Móvil
+            if(bankNameInput) bankNameInput.value = data.bankName || "Mercantil";
+            if(bankCodeInput) bankCodeInput.value = data.bankCode || "0105";
+            if(paymentPhoneInput) paymentPhoneInput.value = data.paymentPhone || "04141234567";
+            if(paymentCIInput) paymentCIInput.value = data.paymentCI || "J-123456789";
+
+            // 🔴 CARGAR BINANCE Y ZELLE (SI EXISTEN LOS INPUTS)
+            if(binanceInput) binanceInput.value = data.binanceEmail || "";
+            if(zelleInput) zelleInput.value = data.zelleEmail || "";
+
+            // Actualizar variables globales
             window.CURRENT_POOL_SIZE = parseInt(data.totalTickets);
             window.CURRENT_PRICE = parseFloat(data.ticketPrice);
             window.CURRENT_CURRENCY = data.currency;
             
-            loadData(); // Cargar ventas
+            // Cargar tabla de ventas
+            loadData();
         }
     } catch (error) { console.error(error); }
 }
 
+// GUARDAR CONFIGURACIÓN GENERAL
 window.saveConfig = async () => {
-    // Recopilar datos
+    // Valores generales
     const newTotal = ticketsSelect.value;
     const newPrice = priceInput.value;
     const newCurrency = currencySelect.value;
@@ -284,15 +299,22 @@ window.saveConfig = async () => {
     const newTitle = titleInput.value;
     const newCode = codeInput.value;
     
+    // Valores Bancarios
     const bankName = bankNameInput.value;
     const bankCode = bankCodeInput.value;
     const payPhone = paymentPhoneInput.value;
     const payCI = paymentCIInput.value;
 
+    // 🔴 OBTENER VALORES DE BINANCE Y ZELLE
+    // Usamos el operador ? para evitar error si el input no existe en el HTML
+    const valBinance = binanceInput ? binanceInput.value : "";
+    const valZelle = zelleInput ? zelleInput.value : "";
+
+    // Verificación Manual/Auto
     const isAutoVerification = verificationToggle.checked;
     const modeToSend = isAutoVerification ? 'auto' : 'manual';
 
-    if (!await showConfirm("¿Guardar cambios?", "Se actualizará la configuración.")) return;
+    if (!await showConfirm("¿Guardar cambios?", "Se actualizará la configuración de la rifa.")) return;
 
     const btn = document.querySelector('button[onclick="saveConfig()"]');
     const originalText = btn.innerText;
@@ -303,9 +325,24 @@ window.saveConfig = async () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                totalTickets: newTotal, ticketPrice: newPrice, currency: newCurrency, manualSold: newManualSold,
-                isClosed: !isRaffleOpen, raffleTitle: newTitle, drawCode: newCode, verificationMode: modeToSend,
-                bankName, bankCode, paymentPhone: payPhone, paymentCI: payCI
+                totalTickets: newTotal,
+                ticketPrice: newPrice,
+                currency: newCurrency,
+                manualSold: newManualSold,
+                isClosed: !isRaffleOpen,
+                raffleTitle: newTitle, 
+                drawCode: newCode,
+                verificationMode: modeToSend,
+                
+                // Datos Bancarios
+                bankName: bankName,
+                bankCode: bankCode,
+                paymentPhone: payPhone,
+                paymentCI: payCI,
+
+                // 🔴 ENVIAMOS LOS NUEVOS DATOS
+                binanceEmail: valBinance,
+                zelleEmail: valZelle
             })
         });
 
@@ -392,18 +429,44 @@ function renderTable(data) {
     const tableBody = document.getElementById('sales-table-body');
     if(!tableBody) return;
     tableBody.innerHTML = '';
-    if (data.length === 0) { tableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Sin ventas.</td></tr>'; return; }
+
+    if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">Sin ventas registradas.</td></tr>';
+        return;
+    }
 
     data.forEach(sale => {
+        // 1. Formateo de Fecha
         let dateStr = "N/A";
-        if (sale.dateObj && sale.dateObj.toDate) dateStr = sale.dateObj.toDate().toLocaleDateString('es-VE', { month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
+        if (sale.dateObj && sale.dateObj.toDate) {
+            dateStr = sale.dateObj.toDate().toLocaleDateString('es-VE', { 
+                month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' 
+            });
+        }
         const saleCurrency = sale.currency || window.CURRENT_CURRENCY;
 
-        // ESTADOS
+        // 2. Lógica de Iconos de Pago (Binance/Zelle/PM)
+        let methodIcon = '';
+        if (sale.paymentMethod === 'binance') methodIcon = '<span class="text-yellow-400 font-bold text-[9px] mr-1">BINANCE</span>';
+        else if (sale.paymentMethod === 'zelle') methodIcon = '<span class="text-purple-400 font-bold text-[9px] mr-1">ZELLE</span>';
+        else methodIcon = '<span class="text-blue-400 font-bold text-[9px] mr-1">PAGO MÓVIL</span>';
+
+        // 3. Botón de Ver Recibo (Si existe URL)
+        let receiptBtn = '';
+        if (sale.receiptUrl) {
+            receiptBtn = `
+                <button onclick="viewReceipt('${sale.receiptUrl}')" class="text-gray-400 hover:text-white ml-1 transition-colors" title="Ver Comprobante">
+                    <span class="material-symbols-outlined text-[16px] align-middle">image</span>
+                </button>
+            `;
+        }
+
+        // 4. Lógica de Estado (Pendiente vs Listo)
         const isPending = sale.verificationMethod === 'manual';
-        
         let statusIcon;
+
         if (isPending) {
+            // Botón para validar manualmente
             statusIcon = `
                 <button onclick="approveSale('${sale.id}', '${sale.name}')" 
                         class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 group border border-orange-500/20 ml-auto mt-1"
@@ -413,6 +476,7 @@ function renderTable(data) {
                 </button>
             `;
         } else {
+            // Estado verificado
             statusIcon = `
                 <div class="flex items-center justify-end gap-1 text-primary mt-1 opacity-80">
                     <span class="text-[10px] font-bold uppercase tracking-wider">Listo</span>
@@ -425,20 +489,56 @@ function renderTable(data) {
         row.className = "hover:bg-white/5 transition-colors border-b border-white/5";
         
         row.innerHTML = `
-            <td class="p-3 text-gray-400 text-[10px] hidden sm:table-cell whitespace-nowrap align-top">${dateStr}</td>
-            <td class="p-3 align-top">
-                <div class="font-bold text-white text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none">${sale.name}</div>
-                <div class="text-[10px] text-primary sm:hidden">${sale.ci}</div>
+            <!-- Fecha (Solo PC) -->
+            <td class="p-3 text-gray-400 text-[10px] hidden sm:table-cell whitespace-nowrap align-top">
+                ${dateStr}
             </td>
-            <td class="p-3 align-top"><span class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded text-[10px] tracking-wider">${sale.ref}</span></td>
-            <td class="p-3 text-gray-400 text-xs hidden sm:table-cell align-top"><span class="text-primary font-bold">${sale.ci}</span><br>${sale.phone}</td>
-            <td class="p-3 max-w-[120px] sm:max-w-none align-top">
-                <div class="flex gap-1 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-1">
-                    ${sale.numbers.map(n => `<span class="bg-surface-highlight border border-white/10 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0">${n}</span>`).join('')}
+            
+            <!-- Cliente -->
+            <td class="p-3 align-top">
+                <div class="font-bold text-white text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none">
+                    ${sale.name}
+                </div>
+                <div class="text-[10px] text-primary sm:hidden">
+                    ${sale.ci}
                 </div>
             </td>
+
+            <!-- Referencia + Método + Recibo -->
+            <td class="p-3 align-top">
+                <div class="flex flex-col items-start">
+                    <span class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded text-[10px] tracking-wider">
+                        ${sale.ref}
+                    </span>
+                    <div class="mt-1 flex items-center">
+                        ${methodIcon}
+                        ${receiptBtn}
+                    </div>
+                </div>
+            </td>
+
+            <!-- Contacto (Solo PC) -->
+            <td class="p-3 text-gray-400 text-xs hidden sm:table-cell align-top">
+                <span class="text-primary font-bold">${sale.ci}</span><br>
+                ${sale.phone}
+            </td>
+
+            <!-- Tickets (Scroll en Móvil, Wrap en PC) -->
+            <td class="p-3 max-w-[120px] sm:max-w-none align-top">
+                <div class="flex gap-1 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-1">
+                    ${sale.numbers.map(n => `
+                        <span class="bg-surface-highlight border border-white/10 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0">
+                            ${n}
+                        </span>
+                    `).join('')}
+                </div>
+            </td>
+
+            <!-- Monto + Acción -->
             <td class="p-3 text-right align-top">
-                <div class="font-bold text-green-400 text-xs sm:text-sm whitespace-nowrap">${saleCurrency} ${sale.totalAmount.toFixed(2)}</div>
+                <div class="font-bold text-green-400 text-xs sm:text-sm whitespace-nowrap">
+                     ${sale.totalAmount.toFixed(2)} ${saleCurrency}
+                </div>
                 ${statusIcon}
             </td>
         `;
@@ -638,3 +738,12 @@ window.exportToCSV = () => {
     link.setAttribute("download", `ventas_${CLIENT_ID}.csv`);
     document.body.appendChild(link); link.click();
 };
+
+window.viewReceipt = (url) => {
+    document.getElementById('receipt-image').src = url;
+    document.getElementById('receipt-modal').classList.remove('hidden');
+};
+window.closeReceiptModal = () => {
+    document.getElementById('receipt-modal').classList.add('hidden');
+};
+

@@ -371,14 +371,18 @@ app.post('/api/:raffleId/config', async (req, res) => {
     const { raffleId } = req.params;
     const body = req.body;
     const updateData = {};
-    const allowed = [
+      const allowed = [
         'totalTickets', 'ticketPrice', 'currency', 'manualSold', 'images', 
         'adminPin', 'raffleTitle', 'drawCode', 'isClosed', 'verificationMode',
         'bankName', 'bankCode', 'paymentPhone', 'paymentCI', 'companyName', 
         'logoUrl', 'faviconUrl',
+        // Credenciales Banco
         'mercantilMerchantId', 'mercantilClientId', 'mercantilSecretKey', 
-        'mercantilIntegratorId', 'mercantilTerminalId', 'mercantilPhone'
+        'mercantilIntegratorId', 'mercantilTerminalId', 'mercantilPhone',
+        // 🔴 NUEVOS CAMPOS AGREGADOS:
+        'binanceEmail', 'zelleEmail'
     ];
+
     allowed.forEach(key => { if(body[key] !== undefined) updateData[key] = body[key]; });
     
     if (Object.keys(updateData).length === 0) return res.status(400).json({ error: "No datos" });
@@ -412,31 +416,48 @@ app.post('/api/:raffleId/comprar', async (req, res) => {
     const { raffleId } = req.params;
     const { userData, quantity } = req.body;
 
-    // 1. Configuración
+    // 1. OBTENER CONFIGURACIÓN
     const config = await getRaffleConfig(raffleId);
 
-    if (config.isClosed) return res.status(403).json({ error: "⛔ Sorteo Cerrado." });
+    if (config.isClosed) {
+        return res.status(403).json({ error: "⛔ El sorteo está cerrado. No se aceptan más ventas." });
+    }
 
     const TOTAL_TICKETS = parseInt(config.totalTickets) || 100;
     const PRICE = parseFloat(config.ticketPrice) || 5;
     const CURRENCY = config.currency || '$';
+    const RAFFLE_TITLE = config.raffleTitle || "Gran Rifa";
+    const DRAW_CODE = config.drawCode || "Sorteo General";
     const MODE = config.verificationMode || 'manual'; 
 
     if (!userData || !quantity) return res.status(400).json({ error: 'Faltan datos' });
 
-    // 2. Seguridad
+     // 2. CHEQUEAR DUPLICADO
     const isUsed = await checkReferenceExists(raffleId, userData.ref);
     if (isUsed) return res.status(409).json({ error: 'Referencia ya utilizada.' });
 
-    // 3. Cálculos
+    // 3. CÁLCULOS FINANCIEROS (CORREGIDO: DETECCIÓN DE MONEDA)
     const currentRate = await getExchangeRate();
-    const amountUSD = quantity * PRICE;
-    const amountVES = amountUSD * (currentRate || 0);
+    if (!currentRate) console.warn("⚠️ No se pudo obtener tasa BCV");
+
+    let amountUSD = 0;
+    let amountVES = 0;
+    const rawTotal = quantity * PRICE; // Precio base (sea $ o Bs)
+
+    // Lógica de Conversión
+    if (CURRENCY === 'Bs.' || CURRENCY === 'Bs') {
+        // --- BASE BOLÍVARES ---
+        amountVES = rawTotal;
+        amountUSD = currentRate > 0 ? (amountVES / currentRate) : 0;
+    } else {
+        // --- BASE DÓLARES (O Euros/USDT) ---
+        amountUSD = rawTotal;
+        amountVES = amountUSD * (currentRate || 0);
+    }
+
     const dateToCheck = getVenezuelaDate(userData.paymentDate);
-    
+    // Variables de Estado
     let bankResult = { success: false };
-    
-    // VARIABLES PARA EL CORREO Y ESTADO
     let dbStatus = '';
     let emailSubject = '';
     let emailColor = '';
@@ -444,71 +465,87 @@ app.post('/api/:raffleId/comprar', async (req, res) => {
     let emailMessage = '';
     let qrStatus = '';
 
-    // 4. LÓGICA DE MODOS
+    // 4. LÓGICA DE VERIFICACIÓN (MANUAL VS AUTO)
     if (MODE === 'manual') {
-        // --- MODO MANUAL (PENDIENTE) ---
+        // --- CASO MANUAL: PENDIENTE ---
         console.log(`⚠️ MODO MANUAL: Referencia ${userData.ref} puesta en espera.`);
-        bankResult = { success: true, data: { trx_type: "manual_report" } };
+        
+        bankResult = { 
+            success: true, 
+            data: { trx_type: "manual_report", authorization_code: "PENDIENTE" } 
+        };
         
         dbStatus = 'pendiente_verificacion';
-        emailSubject = `⏳ REPORTE RECIBIDO: ${config.raffleTitle}`;
+        emailSubject = `⏳ REPORTE RECIBIDO: ${RAFFLE_TITLE}`;
         emailColor = '#f59e0b'; // Naranja
         emailTitle = 'PAGO EN REVISIÓN';
-        emailMessage = 'Hemos recibido tu reporte de pago. El administrador verificará la transferencia en breve para activar tus tickets.';
+        emailMessage = 'Hemos recibido tu reporte de pago. El administrador verificará la transferencia en breve para validar tus tickets.';
         qrStatus = 'PENDIENTE';
         
     } else {
-        // --- MODO AUTOMÁTICO (VERIFICADO) ---
-        if (!config.mercantilMerchantId) return res.status(500).json({ error: "Banco no configurado." });
+        // --- CASO AUTOMÁTICO: BANCO ---
+        if (!config.mercantilMerchantId) return res.status(500).json({ error: "Banco no configurado por el administrador." });
         
         const clientCreds = {
-            merchantId: config.mercantilMerchantId, clientId: config.mercantilClientId, secretKey: config.mercantilSecretKey,
+            merchantId: config.mercantilMerchantId,
+            clientId: config.mercantilClientId,
+            secretKey: config.mercantilSecretKey,
             integratorId: config.mercantilIntegratorId || process.env.MERCANTIL_INTEGRATOR_ID,
-            terminalId: config.mercantilTerminalId || "abcde", phoneNumber: config.mercantilPhone
+            terminalId: config.mercantilTerminalId || "abcde",
+            phoneNumber: config.mercantilPhone
         };
         
+        // Verificamos el monto en Bolívares
         bankResult = await verifyMercantilPayment(clientCreds, userData.ci, userData.phone, userData.ref, amountVES, dateToCheck);
         
-        if (!bankResult.success) return res.status(402).json({ error: 'Pago no encontrado en el banco.' });
+        if (!bankResult.success) {
+            return res.status(402).json({ error: `Pago no encontrado. Se esperaban Bs. ${amountVES.toFixed(2)}` });
+        }
 
         dbStatus = 'pagado_verificado';
-        emailSubject = `✅ TICKET CONFIRMADO: ${config.raffleTitle}`;
+        emailSubject = `✅ TICKET CONFIRMADO: ${RAFFLE_TITLE}`;
         emailColor = '#13ec5b'; // Verde
         emailTitle = 'BOLETO DIGITAL';
         emailMessage = '¡Felicidades! Tu pago ha sido verificado exitosamente por el Banco Mercantil.';
         qrStatus = 'VERIFICADO';
     }
 
-    // 5. Asignación de Números
+    // 5. ASIGNACIÓN DE NÚMEROS (INVENTARIO)
     const available = await getAvailableNumbers(raffleId, TOTAL_TICKETS);
-    if (available.length < quantity) return res.status(400).json({ error: `Solo quedan ${available.length} tickets.` });
+    if (available.length < quantity) {
+        return res.status(400).json({ error: `Solo quedan ${available.length} tickets disponibles.` });
+    }
 
     available.sort(() => Math.random() - 0.5);
     const assignedNumbers = available.slice(0, quantity);
 
-    // 6. Guardar Venta
+    // 6. GUARDAR VENTA EN FIREBASE
     const newSale = {
       ...userData,
       ticketsQty: parseInt(quantity),
-      totalAmount: amountUSD,
-      amountUSD, amountVES, exchangeRate: currentRate,
-      currency: CURRENCY,
-      raffleTitle: config.raffleTitle || "Gran Rifa",
-      drawCode: config.drawCode || "General",
+      totalAmount: amountUSD, // Total en USD
+      amountUSD: amountUSD,   // Explícito USD
+      amountVES: amountVES,   // Explícito VES
+      exchangeRate: currentRate,
+      raffleTitle: RAFFLE_TITLE,
+      drawCode: DRAW_CODE,
       numbers: assignedNumbers,
       purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
-      status: dbStatus, // 'pendiente_verificacion' o 'pagado_verificado'
+      status: dbStatus, // Define si sale naranja o verde en el admin
       verificationMethod: MODE,
       bankDetails: bankResult.data || {}
     };
 
     const docRef = await RAFFLES_COLLECTION.doc(raffleId).collection('sales').add(newSale);
 
-    // 7. Generar QR
-    const qrData = `ESTADO: ${qrStatus}\nSorteo: ${newSale.raffleTitle}\nID: ${docRef.id}\n${userData.ci}\nNums: ${assignedNumbers.join(',')}`;
-    const qrImage = await QRCode.toDataURL(qrData, { width: 150 });
+    // 7. GENERAR QR CON ESTADO
+    const qrData = `ESTADO: ${qrStatus}\nSorteo: ${RAFFLE_TITLE}\nID: ${docRef.id}\nCédula: ${userData.ci}\nNúmeros: ${assignedNumbers.join(', ')}`;
+    const qrImage = await QRCode.toDataURL(qrData, { 
+        color: { dark: '#102216', light: '#ffffff' },
+        width: 150 
+    });
 
-    // 8. Enviar Correo (Plantilla Dinámica)
+    // 8. ENVIAR CORREO (PLANTILLA DINÁMICA)
     const mailOptions = {
       from: `Rifa <${process.env.EMAIL_USER}>`,
       to: userData.email,
@@ -519,8 +556,8 @@ app.post('/api/:raffleId/comprar', async (req, res) => {
             <!-- CABECERA -->
             <div style="background-color:#102216;padding:20px;border-radius:15px 15px 0 0;border-bottom:3px dashed ${emailColor};position:relative;">
                <h2 style="color:#fff;margin:0;text-align:center;text-transform:uppercase;letter-spacing:2px;">${emailTitle}</h2>
-               <h1 style="color:${emailColor};margin:5px 0;text-align:center;font-size:24px;">${newSale.raffleTitle}</h1>
-               <p style="color:#888;text-align:center;margin:0;font-size:12px;">${newSale.drawCode}</p>
+               <h1 style="color:${emailColor};margin:5px 0;text-align:center;font-size:24px;">${RAFFLE_TITLE}</h1>
+               <p style="color:#888;text-align:center;margin:0;font-size:12px;">${DRAW_CODE}</p>
             </div>
 
             <!-- CUERPO -->
@@ -547,13 +584,13 @@ app.post('/api/:raffleId/comprar', async (req, res) => {
                </table>
 
                <div style="margin-top:30px;text-align:center;">
-                  <img src="cid:qr" style="border:4px solid #102216;border-radius:8px;width:150px;height:150px;">
+                  <img src="cid:qrcode_boleto" style="border:4px solid #102216;border-radius:8px;width:150px;height:150px;">
                   <p style="font-size:10px;margin-top:5px;color:#aaa;">ESTADO: ${qrStatus}</p>
                </div>
 
             </div><br><br></div></body></html>
       `,
-      attachments: [{ filename: 'qrcode.png', path: qrImage, cid: 'qr' }]
+      attachments: [{ filename: 'qrcode.png', path: qrImage, cid: 'qrcode_boleto' }]
     };
 
     transporter.sendMail(mailOptions).catch(console.error);
