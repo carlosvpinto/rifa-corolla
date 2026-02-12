@@ -16,9 +16,77 @@ const firebaseConfig = {
   measurementId: "G-W347VQ8NMN"
 };
 
+
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+
+
+// LISTA DE BANCOS VENEZUELA (OFICIAL SUDEBAN)
+const VENEZUELA_BANKS = [
+    { code: "0156", name: "100% Banco" },
+    { code: "0196", name: "ABN Amro Bank" },
+    { code: "0172", name: "Bancamiga" },
+    { code: "0171", name: "Banco Activo" },
+    { code: "0166", name: "Banco Agrícola" },
+    { code: "0175", name: "Banco Bicentenario" },
+    { code: "0128", name: "Banco Caroní" },
+    { code: "0164", name: "Banco de Desarrollo" },
+    { code: "0102", name: "Banco de Venezuela" },
+    { code: "0114", name: "Bancaribe" },
+    { code: "0163", name: "Banco del Tesoro" },
+    { code: "0115", name: "Banco Exterior" },
+    { code: "0003", name: "Banco Industrial" },
+    { code: "0173", name: "Banco Internacional de Desarrollo" },
+    { code: "0105", name: "Banco Mercantil" },
+    { code: "0191", name: "Banco Nacional de Crédito (BNC)" },
+    { code: "0116", name: "Banco Occidental de Descuento (BOD)" },
+    { code: "0138", name: "Banco Plaza" },
+    { code: "0108", name: "Banco Provincial" },
+    { code: "0104", name: "Banco Venezolano de Crédito" },
+    { code: "0168", name: "Bancrecer" },
+    { code: "0134", name: "Banesco" },
+    { code: "0177", name: "Banfanb" },
+    { code: "0146", name: "Bangente" },
+    { code: "0174", name: "Banplus" },
+    { code: "0190", name: "Citibank" },
+    { code: "0121", name: "Corp Banca" },
+    { code: "0157", name: "Delsur" },
+    { code: "0151", name: "Fondo Común (BFC)" },
+    { code: "0601", name: "Instituto Municipal de Crédito" },
+    { code: "0169", name: "Mi Banco" },
+    { code: "0137", name: "Sofitasa" }
+];
+
+// Referencias Nuevas
+const bankSelect = document.getElementById('bank-name-select');
+// const bankCodeInput = document.getElementById('bank-code-input'); // Ya la tenías, asegúrate de tenerla
+
+// FUNCIÓN PARA LLENAR EL SELECT
+function initBankSelector() {
+    if(!bankSelect) return;
+    
+    // Limpiar y ordenar alfabéticamente
+    bankSelect.innerHTML = '<option value="" disabled selected>Selecciona un Banco</option>';
+    VENEZUELA_BANKS.sort((a, b) => a.name.localeCompare(b.name));
+
+    VENEZUELA_BANKS.forEach(bank => {
+        const option = document.createElement('option');
+        option.value = bank.code; // El valor del option será el CÓDIGO
+        option.text = bank.name;
+        bankSelect.appendChild(option);
+    });
+
+    // Evento: Al cambiar el banco, poner el código
+    bankSelect.addEventListener('change', () => {
+        if(bankCodeInput) bankCodeInput.value = bankSelect.value;
+    });
+}
+
+// Inicializar al cargar el script
+initBankSelector();
 
 // ==========================================
 // 2. UI HELPERS
@@ -239,6 +307,12 @@ async function loadConfig() {
         const data = await response.json();
         
         if (data.totalTickets) {
+
+             if (bankSelect && data.bankCode) {
+                bankSelect.value = data.bankCode; 
+            }
+            if (bankCodeInput) bankCodeInput.value = data.bankCode || "0105";
+
             // Rellenar Campos Numéricos
             if(ticketsSelect) ticketsSelect.value = data.totalTickets;
             if(priceInput) priceInput.value = data.ticketPrice;
@@ -289,72 +363,111 @@ async function loadConfig() {
 }
 
 // GUARDAR CONFIGURACIÓN GENERAL
+// 🔴 FUNCIÓN UNIFICADA: SUBIR IMÁGENES + GUARDAR DATOS 🔴
 window.saveConfig = async () => {
-    // Valores generales
+    // 1. RECOPILAR DATOS DEL FORMULARIO
     const newTotal = ticketsSelect.value;
     const newPrice = priceInput.value;
     const newCurrency = currencySelect.value;
     const newManualSold = manualSoldInput.value; 
-    const isRaffleOpen = statusToggle.checked; 
+    const isRaffleOpen = statusToggle.checked; // Si está check, está ABIERTO
     const newTitle = titleInput.value;
     const newCode = codeInput.value;
+
     
-    // Valores Bancarios
-    const bankName = bankNameInput.value;
-    const bankCode = bankCodeInput.value;
+    
+    // Datos Bancarios
+ 
+     const bankName = bankSelect.options[bankSelect.selectedIndex]?.text || "Mercantil";
+    const bankCode = bankSelect.value || "0105"; // El valor del select es el código
+    
     const payPhone = paymentPhoneInput.value;
     const payCI = paymentCIInput.value;
 
-    // 🔴 OBTENER VALORES DE BINANCE Y ZELLE
-    // Usamos el operador ? para evitar error si el input no existe en el HTML
+    // Datos Binance/Zelle (Usa ? para evitar error si no existen los inputs)
     const valBinance = binanceInput ? binanceInput.value : "";
     const valZelle = zelleInput ? zelleInput.value : "";
 
-    // Verificación Manual/Auto
+    // Modo de Verificación
     const isAutoVerification = verificationToggle.checked;
     const modeToSend = isAutoVerification ? 'auto' : 'manual';
 
-    if (!await showConfirm("¿Guardar cambios?", "Se actualizará la configuración de la rifa.")) return;
+    // 2. CONFIRMACIÓN
+    if (!await showConfirm("¿Guardar cambios?", "Se actualizará la configuración y se subirán las nuevas imágenes.")) return;
 
+    // Bloquear botón
     const btn = document.querySelector('button[onclick="saveConfig()"]');
     const originalText = btn.innerText;
-    btn.innerText = "Guardando..."; btn.disabled = true;
+    btn.innerText = "Procesando..."; 
+    btn.disabled = true;
 
     try {
+        // 3. LÓGICA DE IMÁGENES (Subida a Storage)
+        let uploadedUrls = [];
+        
+        // Si hay archivos nuevos seleccionados, los subimos uno por uno
+        if (newFilesToUpload.length > 0) {
+            btn.innerText = `Subiendo ${newFilesToUpload.length} fotos...`;
+            
+            for (const file of newFilesToUpload) {
+                // Referencia: tenants/ID_CLIENTE/slides/FECHA_NOMBRE
+                const storageRef = ref(storage, `tenants/${CLIENT_ID}/slides/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+                uploadedUrls.push(url);
+            }
+        }
+
+        // Combinar URLs viejas (existingUrls) con las nuevas (uploadedUrls)
+        const finalImageList = [...existingUrls, ...uploadedUrls];
+
+        // 4. ENVIAR TODO AL SERVIDOR
+        btn.innerText = "Guardando datos...";
+
         const response = await fetch(`${CLIENT_API_URL}/config`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                totalTickets: newTotal,
-                ticketPrice: newPrice,
-                currency: newCurrency,
+                // Configuración General
+                totalTickets: newTotal, 
+                ticketPrice: newPrice, 
+                currency: newCurrency, 
                 manualSold: newManualSold,
-                isClosed: !isRaffleOpen,
+                isClosed: !isRaffleOpen, // isClosed es true si el switch está apagado
                 raffleTitle: newTitle, 
-                drawCode: newCode,
+                drawCode: newCode, 
                 verificationMode: modeToSend,
                 
-                // Datos Bancarios
-                bankName: bankName,
-                bankCode: bankCode,
-                paymentPhone: payPhone,
-                paymentCI: payCI,
-
-                // 🔴 ENVIAMOS LOS NUEVOS DATOS
-                binanceEmail: valBinance,
-                zelleEmail: valZelle
+                // Configuración Bancaria
+                bankName, bankCode, paymentPhone: payPhone, paymentCI: payCI,
+                binanceEmail: valBinance, zelleEmail: valZelle,
+                
+                // Galería de Imágenes (Array de URLs)
+                images: finalImageList 
             })
         });
 
         if (response.ok) {
-            showToast("Configuración guardada");
-            window.CURRENT_POOL_SIZE = parseInt(newTotal);
-            window.CURRENT_PRICE = parseFloat(newPrice);
-            window.CURRENT_CURRENCY = newCurrency;
-            loadData();
-        } else { showToast("Error del servidor", 'error'); }
-    } catch (error) { showToast("Error de conexión", 'error'); } 
-    finally { btn.innerText = originalText; btn.disabled = false; }
+            showToast("✅ Configuración y Galería Guardadas Exitosamente");
+            
+            // Limpiar la cola de subida porque ya se guardaron
+            newFilesToUpload = []; 
+            
+            // Recargar la configuración para ver los cambios reflejados
+            loadConfig(); 
+        } else { 
+            const result = await response.json();
+            showToast(result.error || "Error del servidor al guardar", 'error'); 
+        }
+
+    } catch (error) { 
+        console.error(error);
+        showToast("Error de conexión o subida: " + error.message, 'error'); 
+    } finally { 
+        // Restaurar botón
+        btn.innerText = originalText; 
+        btn.disabled = false; 
+    }
 };
 
 // Guardar nuevo PIN

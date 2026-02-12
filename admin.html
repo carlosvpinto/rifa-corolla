@@ -232,14 +232,20 @@
                     <div class="md:col-span-4 mt-4 pt-4 border-t border-white/10">
                         <h4 class="text-xs text-green-400 font-bold uppercase tracking-widest mb-3">Datos de Recepción (Pago Móvil)</h4>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Banco</label>
-                                <input type="text" id="bank-name-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: Mercantil">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Código</label>
-                                <input type="text" id="bank-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: 0105">
-                            </div>
+                           <!-- BANCO (LISTA DESPLEGABLE) -->
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Banco</label>
+                            <select id="bank-name-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary cursor-pointer">
+                                <option value="" disabled selected>Selecciona un Banco</option>
+                                <!-- Se llenará con JS -->
+                            </select>
+                        </div>
+                        
+                        <!-- CÓDIGO (AUTO-COMPLETADO) -->
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Código</label>
+                            <input type="text" id="bank-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary font-mono" readonly placeholder="Ej: 0105">
+                        </div>
                             <div>
                                 <label class="block text-xs text-gray-400 mb-1">Teléfono</label>
                                 <input type="text" id="payment-phone-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: 04141234567">
@@ -509,7 +515,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 2: IMÁGENES (VISIBLE) -->
+           <!-- SECCIÓN 2: IMÁGENES -->
             <div class="mb-6 bg-surface-dark p-6 rounded-2xl border border-white/5">
                 <div class="flex items-center gap-3 mb-4">
                     <span class="material-symbols-outlined text-primary text-2xl">imagesmode</span>
@@ -524,11 +530,11 @@
                     <input id="image-upload" type="file" class="hidden" multiple accept="image/*" onchange="handleImageUpload(event)" />
                 </label>
 
+                <!-- Contenedor de previsualización -->
                 <div id="image-preview-container" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
                 
-                <button onclick="saveImagesToBackend()" class="w-full mt-4 border border-primary text-primary hover:bg-primary hover:text-background-dark font-bold rounded-lg text-sm px-5 py-2.5 transition-colors">
-                    Actualizar Galería
-                </button>
+                <!-- ELIMINADO: El botón "Actualizar Galería" ya no va aquí. 
+                     Usaremos el botón general de "Guardar Configuración" -->
             </div>
 
             <!-- SECCIÓN 3: TABLA (VISIBLE) -->

@@ -599,7 +599,16 @@ window.closeErrorModal = () => {
 // ==========================================
 // 7. ENVÍO DE COMPRA
 // ==========================================
-if(btnOpenModal) btnOpenModal.onclick = () => modal.classList.remove('hidden');
+if (btnOpenModal) {
+    btnOpenModal.onclick = () => {
+        // 1. Mostrar la ventana
+        modal.classList.remove('hidden');
+        
+        // 2. CORRECCIÓN: Forzar la carga de datos de Pago Móvil al abrir
+        // Esto asegura que se lean las variables BANK_NAME, PAY_PHONE, etc. actualizadas
+        setPaymentMethod('pago_movil'); 
+    };
+}
 const closeModal = () => modal.classList.add('hidden');
 if(btnCloseModal) btnCloseModal.onclick = closeModal;
 if(backdrop) backdrop.onclick = closeModal;
