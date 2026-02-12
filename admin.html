@@ -227,44 +227,65 @@
                             <option value="€">Euros (€)</option>
                         </select>
                     </div>
+                     <!-- 🟢 PEGA EL CAMPO DE DESCRIPCIÓN AQUÍ 🟢 -->
+                    <div class="md:col-span-4">
+                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Descripción / Detalles del Premio</label>
+                        <textarea id="raffle-description-input" rows="3" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600 resize-none" placeholder="Ej: ¡Gana un carro 0km! Incluye traspaso. Fecha del sorteo..."></textarea>
+                    </div>
+
+                 
 
                     <!-- DATOS BANCARIOS -->
-                    <div class="md:col-span-4 mt-4 pt-4 border-t border-white/10">
-                        <h4 class="text-xs text-green-400 font-bold uppercase tracking-widest mb-3">Datos de Recepción (Pago Móvil)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                           <!-- BANCO (LISTA DESPLEGABLE) -->
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Banco</label>
-                            <select id="bank-name-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary cursor-pointer">
-                                <option value="" disabled selected>Selecciona un Banco</option>
-                                <!-- Se llenará con JS -->
-                            </select>
-                        </div>
-                        
-                        <!-- CÓDIGO (AUTO-COMPLETADO) -->
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">Código</label>
-                            <input type="text" id="bank-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary font-mono" readonly placeholder="Ej: 0105">
-                        </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Teléfono</label>
-                                <input type="text" id="payment-phone-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: 04141234567">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-1">Cédula/RIF</label>
-                                <input type="text" id="payment-ci-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: J-123456789">
-                            </div>
-                        </div>
+<div class="md:col-span-4 mt-4 pt-4 border-t border-white/10">
+    <h4 class="text-xs text-green-400 font-bold uppercase tracking-widest mb-3">Datos de Recepción (Pago Móvil)</h4>
+    
+    <!-- FILA 1: DATOS PAGO MÓVIL (4 Columnas) -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- BANCO -->
+        <div>
+            <label class="block text-xs text-gray-400 mb-1">Banco</label>
+            <select id="bank-name-select" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary cursor-pointer">
+                <option value="" disabled selected>Selecciona un Banco</option>
+                <!-- Se llenará con JS -->
+            </select>
+        </div>
+    
+        <!-- CÓDIGO -->
+        <div>
+            <label class="block text-xs text-gray-400 mb-1">Código</label>
+            <input type="text" id="bank-code-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary font-mono" readonly placeholder="Ej: 0105">
+        </div>
+        
+        <!-- TELÉFONO -->
+        <div>
+            <label class="block text-xs text-gray-400 mb-1">Teléfono</label>
+            <input type="text" id="payment-phone-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: 04141234567">
+        </div>
+        
+        <!-- CÉDULA -->
+        <div>
+            <label class="block text-xs text-gray-400 mb-1">Cédula/RIF</label>
+            <input type="text" id="payment-ci-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-primary placeholder-gray-600" placeholder="Ej: J-123456789">
+        </div>
+    </div>
 
-                        <div>
-                            <label class="block text-xs text-yellow-400 mb-1">Binance Pay (Email/ID)</label>
-                            <input type="text" id="binance-email-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-yellow-400 placeholder-gray-600" placeholder="Opcional">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-purple-400 mb-1">Zelle (Email/Tlf)</label>
-                            <input type="text" id="zelle-email-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-purple-400 placeholder-gray-600" placeholder="Opcional">
-                        </div>
-                    </div>
+    <!-- FILA 2: MÉTODOS EN DÓLARES (Binance y Zelle lado a lado) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <!-- Binance -->
+        <div>
+            <label class="block text-xs text-yellow-400 mb-1">Binance Pay (Email/ID)</label>
+            <input type="text" id="binance-email-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-yellow-400 placeholder-gray-600" placeholder="Opcional">
+        </div>
+        
+        <!-- Zelle -->
+        <div>
+            <label class="block text-xs text-purple-400 mb-1">Zelle (Email/Tlf)</label>
+            <input type="text" id="zelle-email-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg p-2.5 outline-none focus:border-purple-400 placeholder-gray-600" placeholder="Opcional">
+        </div>
+    </div>
+</div>
+
+                    
 
                     <!-- BOTÓN GUARDAR -->
                     <div class="md:col-span-4 mt-2">
@@ -461,6 +482,8 @@
                             <input type="text" id="raffle-title-input" class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg pl-10 p-2.5 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all placeholder-gray-600" placeholder="Ej: Gran Rifa Toyota">
                         </div>
                     </div>
+
+                   
 
                     <!-- 3. CÓDIGO (Ocupa 2 columnas en PC) -->
                     <div class="md:col-span-2">

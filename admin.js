@@ -286,18 +286,82 @@ const paymentCIInput = document.getElementById('payment-ci-input');
 const binanceInput = document.getElementById('binance-email-input');
 const zelleInput = document.getElementById('zelle-email-input');
 
+const descriptionInput = document.getElementById('raffle-description-input'); 
+
 // Eventos visuales switches
+// LÓGICA DEL SWICH DE ESTADO (CON ADVERTENCIA DE CIERRE)
 if(statusToggle) {
-    statusToggle.addEventListener('change', () => {
-        statusLabel.innerText = statusToggle.checked ? "ABIERTO" : "CERRADO";
-        statusLabel.className = statusToggle.checked ? "ml-3 text-xs font-bold text-primary tracking-wider" : "ml-3 text-xs font-bold text-gray-400 tracking-wider";
+    statusToggle.addEventListener('change', async (e) => {
+        
+        // CASO 1: El usuario intenta CERRAR la rifa (Desmarcar el switch)
+        if (!statusToggle.checked) {
+            
+            // Mostrar advertencia
+            const confirmClose = await showConfirm(
+                "⚠️ ¿Detener Ventas?",
+                "Al cerrar la rifa, los usuarios NO podrán comprar más tickets y la plataforma mostrará 'Ventas Cerradas'. ¿Estás seguro?"
+            );
+
+            // Si el usuario CANCELA (dice que no)
+            if (!confirmClose) {
+                // Volvemos a encender el switch (cancelar la acción visualmente)
+                statusToggle.checked = true;
+                updateStatusUI(); 
+                return; // Salimos sin hacer nada más
+            }
+        }
+
+        // CASO 2: Si confirmó el cierre O si está abriendo la rifa
+        updateStatusUI();
     });
 }
+
+// Función auxiliar para actualizar texto y color (ABIERTO/CERRADO)
+function updateStatusUI() {
+    if (statusToggle.checked) {
+        statusLabel.innerText = "ABIERTO";
+        statusLabel.className = "ml-3 text-xs font-bold text-primary tracking-wider";
+    } else {
+        statusLabel.innerText = "CERRADO";
+        statusLabel.className = "ml-3 text-xs font-bold text-gray-400 tracking-wider";
+    }
+}
+// LÓGICA DEL SWICH DE VERIFICACIÓN (CON ADVERTENCIA DE API)
 if(verificationToggle) {
-    verificationToggle.addEventListener('change', () => {
-        verificationLabel.innerText = verificationToggle.checked ? "AUTOMÁTICO" : "MANUAL";
-        verificationLabel.className = verificationToggle.checked ? "ml-3 text-xs font-bold text-blue-400 tracking-wider" : "ml-3 text-xs font-bold text-orange-400 tracking-wider";
+    verificationToggle.addEventListener('change', async (e) => {
+        
+        // Verificamos si el usuario lo está ENCENDIENDO (pasando a Automático)
+        if (verificationToggle.checked) {
+            
+            // 1. Mostrar advertencia usando tu modal de confirmación existente
+            const userConfirmed = await showConfirm(
+                "⚠️ Requisito Técnico",
+                "La validación automática requiere conexión a una API Bancaria. Si no tienes una configurada, los pagos no se conciliarán. ¿Deseas activarlo de todas formas?"
+            );
+
+            // 2. Si el usuario cancela o cierra el modal
+            if (!userConfirmed) {
+                // Devolvemos el switch a apagado (Manual)
+                verificationToggle.checked = false;
+                updateVerificationUI(false); 
+                return; // Salimos de la función
+            }
+        }
+
+        // 3. Si aceptó (o si lo está apagando), actualizamos la interfaz visual
+        updateVerificationUI(verificationToggle.checked);
     });
+}
+
+// Función auxiliar para actualizar el texto y color del label
+function updateVerificationUI(isChecked) {
+    if (isChecked) {
+        verificationLabel.innerText = "AUTOMÁTICO";
+        verificationLabel.className = "ml-3 text-xs font-bold text-blue-400 tracking-wider";
+    } else {
+        verificationLabel.innerText = "MANUAL";
+        verificationLabel.className = "ml-3 text-xs font-bold text-orange-400 tracking-wider";
+    }
 }
 
 // CARGAR CONFIGURACIÓN DESDE EL SERVIDOR
@@ -328,6 +392,8 @@ async function loadConfig() {
                 statusToggle.checked = !data.isClosed; 
                 statusToggle.dispatchEvent(new Event('change'));
             }
+
+            if(descriptionInput) descriptionInput.value = data.raffleDescription || "";
 
             // Switch Verificación
             if(verificationToggle) {
@@ -373,6 +439,7 @@ window.saveConfig = async () => {
     const isRaffleOpen = statusToggle.checked; // Si está check, está ABIERTO
     const newTitle = titleInput.value;
     const newCode = codeInput.value;
+    const newDesc = descriptionInput.value; // <--- Obtener valor
 
     
     
@@ -443,7 +510,8 @@ window.saveConfig = async () => {
                 binanceEmail: valBinance, zelleEmail: valZelle,
                 
                 // Galería de Imágenes (Array de URLs)
-                images: finalImageList 
+                images: finalImageList ,
+                raffleDescription: newDesc // <--- Enviar Descrpcion al servidor
             })
         });
 

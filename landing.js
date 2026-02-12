@@ -34,7 +34,7 @@ async function initLanding() {
         const rateData = await rateRes.json();
         USER_COUNTRY = geoRes.country_code || 'VE';
 
-        USER_COUNTRY= 'US';
+        //USER_COUNTRY= 'US';
 
         // 1. Configurar Precios
         if (configData.softwarePrice) SOFTWARE_PRICE_USD = parseFloat(configData.softwarePrice);

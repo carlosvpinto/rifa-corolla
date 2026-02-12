@@ -371,15 +371,13 @@ app.post('/api/:raffleId/config', async (req, res) => {
     const { raffleId } = req.params;
     const body = req.body;
     const updateData = {};
-      const allowed = [
+       const allowed = [
         'totalTickets', 'ticketPrice', 'currency', 'manualSold', 'images', 
         'adminPin', 'raffleTitle', 'drawCode', 'isClosed', 'verificationMode',
         'bankName', 'bankCode', 'paymentPhone', 'paymentCI', 'companyName', 
-        'logoUrl', 'faviconUrl',
-        // Credenciales Banco
+        'logoUrl', 'faviconUrl', 'raffleDescription', // <--- NUEVO CAMPO
         'mercantilMerchantId', 'mercantilClientId', 'mercantilSecretKey', 
         'mercantilIntegratorId', 'mercantilTerminalId', 'mercantilPhone',
-        // 🔴 NUEVOS CAMPOS AGREGADOS:
         'binanceEmail', 'zelleEmail'
     ];
 

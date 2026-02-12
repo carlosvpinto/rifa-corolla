@@ -84,12 +84,21 @@ async function loadRaffleConfig() {
         const response = await fetch(CONFIG_URL);
         if (!response.ok) throw new Error("Servidor respondió con error: " + response.status);
         const data = await response.json();
+
+         // NUEVO: Descripción
+            const descText = data.raffleDescription || "¡Participa y gana! Sorteo autorizado. Compra tu ticket hoy mismo.";
+            const descDisplay = document.getElementById('raffle-description-display');
+            if (descDisplay) descDisplay.innerText = descText;
         
         console.log("✅ Configuración cargada:", data);
 
         // 2. OBTENER TASA DE CAMBIO (NUEVO)
         // Usamos la BASE_API definida al inicio del archivo
         try {
+
+               
+
+
             const rateResponse = await fetch(`${BASE_API}/tasa`);
             const rateData = await rateResponse.json();
             
