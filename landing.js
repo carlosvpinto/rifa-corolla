@@ -220,7 +220,7 @@ if (window.paypal) {
     }).render('#paypal-button-container');
 }
 
-// 6. FUNCIÓN DE ENVÍO
+// 6. FUNCIÓN DE ENVÍO (ACTUALIZADA)
 async function sendPurchase(data, btn, originalText) {
     try {
         const response = await fetch(API_URL, {
@@ -231,8 +231,32 @@ async function sendPurchase(data, btn, originalText) {
         const result = await response.json();
 
         if (response.ok) {
-            alert("¡Felicidades! Licencia Activada.");
-            window.location.href = result.redirectUrl;
+            // 1. Cerrar Modal de Pago
+            closePurchaseModal();
+            
+            // 2. Configurar Modal de Éxito
+            const successModal = document.getElementById('saas-success-modal');
+            const emailDisplay = document.getElementById('success-email-display');
+            const goBtn = document.getElementById('btn-go-dashboard');
+
+            // Poner el correo real
+            if (emailDisplay) emailDisplay.innerText = data.buyerData.email;
+            
+            // Configurar botón
+            if (goBtn) {
+                goBtn.onclick = () => {
+                    window.location.href = result.redirectUrl;
+                };
+            }
+
+            // 3. Mostrar Modal
+            if (successModal) successModal.classList.remove('hidden');
+
+            // (Opcional) Redirección automática en 10 segundos por si acaso
+            setTimeout(() => {
+                window.location.href = result.redirectUrl;
+            }, 10000);
+
         } else {
             alert("❌ " + (result.error || "Error en la compra"));
             if(btn.innerText) { btn.innerText = originalText; btn.disabled = false; }
