@@ -126,7 +126,7 @@ window.copyText = (text, btnElement) => {
 };
 
 window.copyAllSaasData = (btnElement) => {
-    const textToCopy = `Banco: Mercantil (0105)\nTeléfono: 0424-345-4032\nRIF: J-506818817\nMonto: Bs. ${SOFTWARE_PRICE_VES.toFixed(2)} ($${SOFTWARE_PRICE_USD})`;
+    const textToCopy = `Banco: Mercantil (0105)\nTeléfono: 0424-3454032\nRIF: J-506818817\nMonto: Bs. ${SOFTWARE_PRICE_VES.toFixed(2)} ($${SOFTWARE_PRICE_USD})`;
     navigator.clipboard.writeText(textToCopy).then(() => {
         const originalContent = btnElement.innerHTML;
         btnElement.innerHTML = `<span class="material-symbols-outlined text-green-400">check_circle</span> Copiado`;
