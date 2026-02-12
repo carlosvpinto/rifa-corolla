@@ -927,4 +927,206 @@ window.viewReceipt = (url) => {
 window.closeReceiptModal = () => {
     document.getElementById('receipt-modal').classList.add('hidden');
 };
+// ==========================================
+// 11. MAPA DE TICKETS (CORREGIDO)
+// ==========================================
+let currentMapPage = 0;
+const ITEMS_PER_PAGE = 500; 
+let soldTicketsMap = {}; 
+let currentSelectedTicket = null; // 🔴 VARIABLE NUEVA PARA SABER CUAL SELECCIONASTE
 
+window.openTicketMap = () => {
+    // 1. Procesar Ventas
+    soldTicketsMap = {};
+    allSales.forEach(sale => {
+        sale.numbers.forEach(num => {
+            soldTicketsMap[num.toString()] = {
+                name: sale.name,
+                phone: sale.phone,
+                ci: sale.ci,
+                ref: sale.ref,
+                method: sale.paymentMethod
+            };
+        });
+    });
+
+    // 2. Abrir Modal
+    const modal = document.getElementById('map-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        // Animación suave del contenedor interno
+        const content = modal.querySelector('.relative'); // Busca el div hijo
+        if(content) {
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }
+    }, 10);
+
+    // 3. Renderizar
+    currentMapPage = 0;
+    renderTicketGrid();
+};
+
+window.closeTicketMap = () => {
+    const modal = document.getElementById('map-modal');
+    modal.classList.add('opacity-0');
+    const content = modal.querySelector('.relative');
+    if(content) content.classList.add('scale-95');
+    
+    setTimeout(() => modal.classList.add('hidden'), 300);
+    document.getElementById('ticket-detail-footer').classList.add('hidden');
+    currentSelectedTicket = null; // Limpiar selección
+};
+
+window.renderTicketGrid = () => {
+    const grid = document.getElementById('tickets-grid');
+    const label = document.getElementById('map-page-label');
+    if(!grid || !label) return;
+
+    grid.innerHTML = ''; 
+
+    const totalTickets = window.CURRENT_POOL_SIZE || 100;
+    const start = currentMapPage * ITEMS_PER_PAGE;
+    const end = Math.min(start + ITEMS_PER_PAGE, totalTickets);
+    
+    label.innerText = `${start} - ${end - 1}`;
+    
+    // Detectar longitud para ceros a la izquierda (ej: 001)
+    const padding = (totalTickets - 1).toString().length;
+
+    for (let i = start; i < end; i++) {
+        const numStr = i.toString().padStart(padding, '0');
+        const isSold = soldTicketsMap.hasOwnProperty(numStr);
+
+        const btn = document.createElement('button');
+        
+        if (isSold) {
+            btn.className = "h-10 bg-primary text-background-dark font-bold rounded flex items-center justify-center text-xs hover:bg-white hover:text-black transition-all shadow-[0_0_10px_rgba(19,236,91,0.3)]";
+            // Al hacer click, guardamos el número
+            btn.onclick = () => showTicketDetail(numStr);
+        } else {
+            btn.className = "h-10 bg-white/5 text-gray-500 rounded border border-white/10 flex items-center justify-center text-xs cursor-default opacity-50";
+        }
+        
+        btn.innerText = numStr;
+        grid.appendChild(btn);
+    }
+};
+
+window.changeMapPage = (direction) => {
+    const totalTickets = window.CURRENT_POOL_SIZE;
+    const maxPage = Math.ceil(totalTickets / ITEMS_PER_PAGE) - 1;
+    const newPage = currentMapPage + direction;
+    
+    if (newPage >= 0 && newPage <= maxPage) {
+        currentMapPage = newPage;
+        renderTicketGrid();
+        const grid = document.getElementById('tickets-grid');
+        if(grid) grid.scrollTop = 0;
+    }
+};
+
+window.showTicketDetail = (numStr) => {
+    const data = soldTicketsMap[numStr];
+    if (!data) return;
+
+    // 🔴 GUARDAMOS EL TICKET ACTUAL PARA PODER COPIARLO LUEGO
+    currentSelectedTicket = numStr;
+
+    const footer = document.getElementById('ticket-detail-footer');
+    document.getElementById('detail-number').innerText = numStr;
+    document.getElementById('detail-name').innerText = data.name;
+    document.getElementById('detail-info').innerText = `${data.ci} • ${data.phone}`;
+    
+    footer.classList.remove('hidden');
+    // Pequeña animación para llamar la atención
+    footer.classList.remove('animate-pulse');
+    void footer.offsetWidth; // Trigger reflow
+    footer.classList.add('animate-pulse');
+};
+
+// Función para Copiar con Animación y Mensaje
+window.copyDetail = async () => {
+    // 1. Validar que haya un ticket seleccionado
+    if (!currentSelectedTicket || !soldTicketsMap[currentSelectedTicket]) return;
+    
+    const data = soldTicketsMap[currentSelectedTicket];
+
+    // 2. Preparar el texto
+    const textToCopy = `🎟 Ticket: #${currentSelectedTicket}\n👤 Cliente: ${data.name}\n🆔 CI: ${data.ci}\n📱 Tlf: ${data.phone}\n💳 Ref: ${data.ref}`;
+
+    try {
+        // 3. Intentar copiar al portapapeles
+        await navigator.clipboard.writeText(textToCopy);
+
+        // --- ÉXITO ---
+        
+        // A) Mostrar el Toast (Mensaje flotante)
+        // Asegúrate de que la función showToast exista en tu código (la definimos al principio)
+        if (typeof showToast === "function") {
+            showToast("✅ ¡Datos copiados correctamente!");
+        } else {
+            alert("Datos copiados: " + textToCopy); // Fallback por si acaso
+        }
+
+        // B) Animación del Botón
+        const btn = document.getElementById('btn-copy-detail');
+        if (btn) {
+            // Guardar estado original
+            const originalHTML = btn.innerHTML;
+            const originalClasses = btn.className;
+
+            // Cambiar a estado de éxito (Verde y Texto Nuevo)
+            btn.innerHTML = `<span class="material-symbols-outlined text-sm">check_circle</span> <span>¡COPIADO!</span>`;
+            btn.className = "flex items-center gap-1 text-xs text-green-400 font-bold uppercase tracking-wider transition-all duration-200 scale-110";
+
+            // Regresar al estado original después de 2 segundos
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.className = originalClasses;
+            }, 2000);
+        }
+
+    } catch (err) {
+        // --- ERROR ---
+        console.error("Error al copiar:", err);
+        if (typeof showToast === "function") {
+            showToast("Error al copiar", "error");
+        } else {
+            alert("No se pudo copiar automáticamente.");
+        }
+    }
+};
+
+window.searchInMap = (val) => {
+    if (!val) { renderTicketGrid(); return; }
+    
+    const totalTickets = window.CURRENT_POOL_SIZE;
+    const num = parseInt(val);
+    
+    if (!isNaN(num) && num >= 0 && num < totalTickets) {
+        currentMapPage = Math.floor(num / ITEMS_PER_PAGE);
+        renderTicketGrid();
+        
+        // Esperar a que se renderice para buscar el botón
+        setTimeout(() => {
+            const padding = (totalTickets - 1).toString().length;
+            const targetStr = num.toString().padStart(padding, '0');
+            
+            // Buscar el botón específico por su texto
+            const buttons = Array.from(document.querySelectorAll('#tickets-grid button'));
+            const targetBtn = buttons.find(b => b.innerText === targetStr);
+
+            if(targetBtn) {
+                targetBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetBtn.classList.add('ring-2', 'ring-white', 'scale-110', 'z-10');
+                
+                // Si está vendido, mostramos el detalle de una vez
+                if (soldTicketsMap[targetStr]) {
+                    showTicketDetail(targetStr);
+                }
+            }
+        }, 100);
+    }
+};

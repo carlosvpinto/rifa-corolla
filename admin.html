@@ -73,6 +73,11 @@
                 <span class="material-symbols-outlined text-[24px]">emoji_events</span>
             </button>
 
+            <!-- Botón Mapa de Tickets (NUEVO) -->
+            <button onclick="openTicketMap()" class="p-2 text-blue-400 hover:text-blue-200 transition-colors rounded-full hover:bg-white/5" title="Ver Mapa de Tickets">
+                <span class="material-symbols-outlined text-[24px]">grid_view</span>
+            </button>
+
             <!-- MENÚ DESPLEGABLE -->
             <div class="relative">
                 <button id="menu-btn" onclick="toggleMenu()" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full transition-all group">
@@ -730,6 +735,74 @@
             <p class="text-center text-gray-500 text-xs mt-2">Haz clic fuera de la imagen para cerrar</p>
         </div>
     </div>
+
+    <!-- MODAL MAPA DE TICKETS -->
+        <div id="map-modal" class="fixed inset-0 z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+            <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeTicketMap()"></div>
+            
+            <div class="relative w-full max-w-4xl h-[85vh] bg-surface-dark rounded-2xl border border-white/10 flex flex-col shadow-2xl transform scale-95 transition-transform duration-300">
+                
+                <!-- Header del Modal -->
+                <div class="p-5 border-b border-white/10 flex justify-between items-center bg-black/20">
+                    <div>
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span class="material-symbols-outlined text-blue-400">grid_on</span>
+                            Mapa de Tickets
+                        </h3>
+                        <div class="flex gap-4 text-xs mt-1">
+                            <span class="flex items-center gap-1 text-gray-400"><div class="w-3 h-3 bg-white/5 border border-white/20 rounded"></div> Libre</span>
+                            <span class="flex items-center gap-1 text-green-400"><div class="w-3 h-3 bg-primary rounded"></div> Vendido</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="closeTicketMap()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <span class="material-symbols-outlined text-gray-400">close</span>
+                    </button>
+                </div>
+
+                <!-- Controles de Paginación y Búsqueda -->
+                <div class="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-4 justify-between bg-surface-highlight/30">
+                    <!-- Buscador Rápido -->
+                    <div class="relative w-full sm:w-64">
+                        <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-500 text-lg">search</span>
+                        <input type="number" id="map-search" placeholder="Buscar número..." 
+                            class="w-full bg-black/30 border border-white/20 text-white text-sm rounded-lg pl-9 p-2 outline-none focus:border-blue-400"
+                            oninput="searchInMap(this.value)">
+                    </div>
+
+                    <!-- Paginador -->
+                    <div class="flex items-center gap-3 bg-black/30 p-1 rounded-lg border border-white/10">
+                        <button onclick="changeMapPage(-1)" class="p-1 hover:text-white text-gray-400 transition-colors"><span class="material-symbols-outlined">chevron_left</span></button>
+                        <span id="map-page-label" class="text-xs font-mono font-bold text-blue-400 min-w-[100px] text-center">0 - 500</span>
+                        <button onclick="changeMapPage(1)" class="p-1 hover:text-white text-gray-400 transition-colors"><span class="material-symbols-outlined">chevron_right</span></button>
+                    </div>
+                </div>
+
+                <!-- Rejilla de Números (Scrollable) -->
+                <div id="tickets-grid" class="flex-1 overflow-y-auto p-4 grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2 content-start">
+                    <!-- JS llenará esto -->
+                </div>
+
+                <!-- Footer: Detalle de Selección -->
+                <div id="ticket-detail-footer" class="p-4 bg-primary/10 border-t border-primary/20 hidden">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-background-dark font-bold text-lg" id="detail-number">--</div>
+                            <div>
+                                <p class="text-sm font-bold text-white" id="detail-name">Nombre Cliente</p>
+                                <p class="text-xs text-green-300 font-mono" id="detail-info">Tlf / Ref</p>
+                            </div>
+                        </div>
+                        <!-- En el footer del modal (ticket-detail-footer) -->
+                        <button id="btn-copy-detail" onclick="copyDetail()" class="flex items-center gap-1 text-xs text-primary hover:text-white font-bold uppercase tracking-wider transition-all duration-200">
+                            <span class="material-symbols-outlined text-sm">content_copy</span>
+                            <span>Copiar Datos</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
 
     <script type="module" src="admin.js"></script>
 </body>
