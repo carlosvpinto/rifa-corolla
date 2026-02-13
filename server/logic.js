@@ -9,7 +9,7 @@ const CLIENT_ID = urlParams.get('id') || 'demo'; // 'demo' es tu rifa personal
 
 // 2. CONFIGURACIÓN DINÁMICA
 // ⚠️ URL PRODUCCIÓN
-const BASE_API = "https://rifa-carros-corolla.onrender.com/api/";
+const BASE_API = "https://rifa-carros-corolla.onrender.com/api";
 
 
 const BACKEND_URL = `${BASE_API}/${CLIENT_ID}/comprar`;
