@@ -333,8 +333,8 @@ app.post('/api/saas/buy', async (req, res) => {
 
     // 6. ENVIAR CORREOS
     // ⚠️ CAMBIA ESTO:
-    //const APP_URL = "http://127.0.0.1:5501"; // URL LOCAL
-    const APP_URL = "https://rifa-carros-corolla.vercel.app"; // PRODUCCIÓN
+    const APP_URL = "http://localhost:3000"; // URL LOCAL
+    //const APP_URL = "https://rifa-carros-corolla.vercel.app"; // PRODUCCIÓN
 
     const clientMailOptions = {
         from: `Soporte Software <${process.env.EMAIL_USER}>`,
@@ -569,22 +569,6 @@ app.post('/api/:raffleId/comprar', async (req, res) => {
         width: 150 
     });
 
-     // 🛡️ LÓGICA DEMO: MARCA DE AGUA
-    let watermarkHTML = "";
-    let subjectPrefix = "";
-
-    if (raffleId === 'demo-pro') {
-        subjectPrefix = "[DEMO] ";
-        watermarkHTML = `
-            <div style="background-color: #ef4444; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 16px; margin-bottom: 20px; border-radius: 5px;">
-                ⚠️ ESTO ES UNA DEMOSTRACIÓN ⚠️<br>
-                ESTE TICKET NO TIENE VALIDEZ REAL
-            </div>
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80px; color: rgba(255, 0, 0, 0.3); font-weight: bold; pointer-events: none; white-space: nowrap;">
-                DEMO - NO VÁLIDO
-            </div>
-        `;
-    }
 
     // 8. ENVIAR CORREO (PLANTILLA DINÁMICA)
     const mailOptions = {
@@ -600,7 +584,7 @@ app.post('/api/:raffleId/comprar', async (req, res) => {
                <h1 style="color:${emailColor};margin:5px 0;text-align:center;font-size:24px;">${RAFFLE_TITLE}</h1>
                <p style="color:#888;text-align:center;margin:0;font-size:12px;">${DRAW_CODE}</p>
             </div>
-            ${watermarkHTML} <!-- AQUÍ INSERTAMOS LA MARCA DE AGUA -->
+          
             <!-- CUERPO -->
             <div style="background-color:#fdfdfd;padding:30px 25px;border-radius:0 0 15px 15px;position:relative;">
                

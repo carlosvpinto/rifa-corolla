@@ -2,14 +2,14 @@
 // CONFIGURACIÓN (LOCAL / PROD)
 // ==========================================
 // ⚠️ URL DE PRODUCCIÓN
- const API_URL = "https://rifa-carros-corolla.onrender.com/api/saas/buy";
- const MASTER_CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/master/config";
- const API_RATE = "https://rifa-carros-corolla.onrender.com/api/tasa";
+// const API_URL = "https://rifa-carros-corolla.onrender.com/api/saas/buy";
+// const MASTER_CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/master/config";
+// const API_RATE = "https://rifa-carros-corolla.onrender.com/api/tasa";
 
 // ⚠️ URL LOCAL
-//const API_URL = "http://localhost:3000/api/saas/buy";
-//const MASTER_CONFIG_URL = "http://localhost:3000/api/master/config";
-//const API_RATE = "http://localhost:3000/api/tasa";
+const API_URL = "http://localhost:3000/api/saas/buy";
+const MASTER_CONFIG_URL = "http://localhost:3000/api/master/config";
+const API_RATE = "http://localhost:3000/api/tasa";
 
 // Variables Globales
 let SOFTWARE_PRICE_USD = 50; 
@@ -135,15 +135,21 @@ window.copyAllSaasData = (btnElement) => {
 };
 
 // ==========================================
-// 3. MODAL Y FORMULARIOS
+// 3. MODAL Y FORMULARIO (CORREGIDO)
 // ==========================================
 const modal = document.getElementById('purchase-modal');
+const saasForm = document.getElementById('saas-form'); // <--- BUSCAMOS EL ID
+
+// Depuración: Verifica si encontró el formulario
+console.log("Estado del Formulario:", saasForm ? "✅ Encontrado" : "❌ NO ENCONTRADO (Revisa el ID en HTML)");
+
 window.openPurchaseModal = () => { 
     if(modal) {
         modal.classList.remove('hidden');
-        if (USER_COUNTRY !== 'VE') switchPayment('usd');
+        if (typeof USER_COUNTRY !== 'undefined' && USER_COUNTRY !== 'VE') switchPayment('usd');
     }
 };
+
 window.closePurchaseModal = () => { if(modal) modal.classList.add('hidden'); };
 
 const dateInput = document.getElementById('payment-date');
@@ -153,15 +159,19 @@ if (dateInput) {
     dateInput.value = localIso;
 }
 
-// 4. ENVÍO PAGO MÓVIL
-const saasFormBs = document.getElementById('saas-form-bs');
-if (saasFormBs) {
-    saasFormBs.addEventListener('submit', async (e) => {
+// 4. ENVÍO PAGO MÓVIL (LÓGICA BLINDADA)
+if (saasForm) {
+    saasForm.addEventListener('submit', async (e) => {
+        // 1. DETENER EL ENVÍO POR DEFECTO (Vital)
         e.preventDefault();
-        const btn = e.target.querySelector('button');
-        const originalText = btn.innerText;
-        btn.innerText = "Verificando..."; btn.disabled = true;
+        console.log("🚀 Botón presionado, enviando datos...");
 
+        const btn = saasForm.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Conectando..."; 
+        btn.disabled = true;
+
+        // 2. Recopilar Datos
         const data = {
             method: 'mercantil',
             buyerData: {
@@ -176,8 +186,14 @@ if (saasFormBs) {
             paymentDate: document.getElementById('payment-date').value,
             amount: SOFTWARE_PRICE_USD 
         };
-        sendPurchase(data, btn, originalText);
+
+        console.log("📦 Datos a enviar:", data);
+
+        // 3. Enviar
+        await sendPurchase(data, btn, originalText);
     });
+} else {
+    console.error("🚨 ERROR CRÍTICO: No se encontró el formulario con id='saas-form'. El botón no hará nada.");
 }
 
 // 5. ENVÍO PAYPAL
