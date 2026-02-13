@@ -6,13 +6,22 @@ const axios = require('axios');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 require('dotenv').config();
-
-
 const path = require('path'); // Asegúrate de que esté arriba con los otros require
 
+
+// 2. SEGUNDO: CREAR LA APP (Esto debe ir arriba)
+const app = express(); 
+
+// 3. TERCERO: CONFIGURAR LOS USES
+app.use(cors());
+app.use(express.json());
+app.use(express.static(__dirname));
+
+
+
+
 // Esto hace que TODOS tus archivos (index.html, admin.html, master.html, JS, CSS)
-// sean accesibles automáticamente por su nombre.
-app.use(express.static(__dirname)); 
+
 
 // Ruta para la página de inicio (Landing)
 app.get('/', (req, res) => {
@@ -20,9 +29,6 @@ app.get('/', (req, res) => {
 });
 
 
-const app = express();
-app.use(cors());
-app.use(express.json());
 
 // ==========================================
 // 1. CONFIGURACIÓN FIREBASE
