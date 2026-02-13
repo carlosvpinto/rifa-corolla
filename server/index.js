@@ -388,6 +388,13 @@ app.post('/api/saas/buy', async (req, res) => {
 app.post('/api/:raffleId/config', async (req, res) => {
   try {
     const { raffleId } = req.params;
+
+     // 🛡️ PROTECCIÓN DEMO: No permitir cambiar el PIN
+    if (raffleId === 'demo-pro' && req.body.adminPin) {
+        delete req.body.adminPin; // Borramos el intento de cambio de clave
+        console.log("🔒 Intento de cambio de clave bloqueado en Demo.");
+    }
+
     const body = req.body;
     const updateData = {};
        const allowed = [
