@@ -333,8 +333,8 @@ app.post('/api/saas/buy', async (req, res) => {
 
     // 6. ENVIAR CORREOS
     // ⚠️ CAMBIA ESTO:
-    const APP_URL = "http://localhost:3000"; // URL LOCAL
-    //const APP_URL = "https://rifa-carros-corolla.vercel.app"; // PRODUCCIÓN
+    //const APP_URL = "http://localhost:3000"; // URL LOCAL
+    const APP_URL = "https://rifa-carros-corolla.vercel.app"; // PRODUCCIÓN
 
     const clientMailOptions = {
         from: `Soporte Software <${process.env.EMAIL_USER}>`,

@@ -146,8 +146,8 @@ function showConfirm(title, message) {
 // 3. VARIABLES GLOBALES Y LOGIN
 // ==========================================
 // ⚠️ URL DE PRODUCCIÓN (O LOCAL)
-// const API_BASE_URL = "https://rifa-carros-corolla.onrender.com/api"; 
-const API_BASE_URL = "http://localhost:3000/api"; 
+// const API_BASE_URL = "http://localhost:3000/api"; 
+const API_BASE_URL = "https://rifa-carros-corolla.onrender.com/api"; 
 
 // OBTENER ID DEL CLIENTE DE LA URL
 const urlParams = new URLSearchParams(window.location.search);

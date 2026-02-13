@@ -31,7 +31,7 @@ if (backBtn) {
 // ⚠️ URL DE PRODUCCIÓN (RENDER)
 // const BASE_API = "https://rifa-carros-corolla.onrender.com/api";
 // ⚠️ URL LOCAL (PARA PRUEBAS)
-const BASE_API = "http://localhost:3000/api";
+const BASE_API = "https://rifa-carros-corolla.onrender.com/api";
 
 const API_URL = `${BASE_API}/${CLIENT_ID}/config`;
 
