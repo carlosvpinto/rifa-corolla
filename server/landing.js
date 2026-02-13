@@ -95,25 +95,39 @@ initLanding();
 window.switchPayment = (type) => {
     const secBs = document.getElementById('section-bs');
     const secUsd = document.getElementById('section-usd');
+    const formBs = document.getElementById('saas-form-bs'); // Nuevo ID
+    const formUsd = document.getElementById('saas-form-usd'); // Nuevo ID
+    
     const tabBs = document.getElementById('tab-bs');
     const tabUsd = document.getElementById('tab-usd');
 
     if (type === 'bs') {
+        // Mostrar Bs
         secBs.classList.remove('hidden');
+        formBs.classList.remove('hidden');
+        formBs.classList.add('flex'); // Para centrado vertical
+        
+        // Ocultar USD
         secUsd.classList.add('hidden');
-        tabBs.classList.replace('text-gray-400', 'text-background-dark');
-        tabBs.classList.add('bg-primary');
-        tabUsd.classList.remove('bg-blue-500', 'text-white');
-        tabUsd.classList.add('text-gray-400');
+        formUsd.classList.add('hidden');
+        formUsd.classList.remove('flex');
+
+        // Estilos Tabs
+        tabBs.className = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-primary text-background-dark shadow-lg transition-all";
+        tabUsd.className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all";
     } else {
+        // Mostrar USD
         secBs.classList.add('hidden');
+        formBs.classList.add('hidden');
+        formBs.classList.remove('flex');
+
         secUsd.classList.remove('hidden');
-        tabUsd.classList.remove('text-gray-400');
-        tabUsd.classList.add('bg-blue-500', 'text-white');
-        if (!tabBs.classList.contains('hidden')) {
-            tabBs.classList.remove('bg-primary', 'text-background-dark');
-            tabBs.classList.add('text-gray-400');
-        }
+        formUsd.classList.remove('hidden');
+        formUsd.classList.add('flex');
+
+        // Estilos Tabs
+        tabUsd.className = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-blue-500 text-white shadow-lg transition-all";
+        tabBs.className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all";
     }
 };
 
@@ -160,18 +174,19 @@ if (dateInput) {
 }
 
 // 4. ENVÍO PAGO MÓVIL (LÓGICA BLINDADA)
-if (saasForm) {
-    saasForm.addEventListener('submit', async (e) => {
-        // 1. DETENER EL ENVÍO POR DEFECTO (Vital)
-        e.preventDefault();
-        console.log("🚀 Botón presionado, enviando datos...");
+// Buscamos el ID nuevo: 'saas-form-bs'
+const saasFormBs = document.getElementById('saas-form-bs');
 
-        const btn = saasForm.querySelector('button[type="submit"]');
+if (saasFormBs) {
+    saasFormBs.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const btn = saasFormBs.querySelector('button[type="submit"]');
         const originalText = btn.innerText;
-        btn.innerText = "Conectando..."; 
+        
+        btn.innerText = "Verificando..."; 
         btn.disabled = true;
 
-        // 2. Recopilar Datos
         const data = {
             method: 'mercantil',
             buyerData: {
@@ -187,9 +202,6 @@ if (saasForm) {
             amount: SOFTWARE_PRICE_USD 
         };
 
-        console.log("📦 Datos a enviar:", data);
-
-        // 3. Enviar
         await sendPurchase(data, btn, originalText);
     });
 } else {

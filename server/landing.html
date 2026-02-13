@@ -274,161 +274,140 @@
     </footer>
 
     <!-- MODAL DE COMPRA -->
-   <!-- MODAL DE COMPRA MULTIMONEDA -->
-    <div id="purchase-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closePurchaseModal()"></div>
-        <div class="relative w-full max-w-md bg-surface-dark rounded-2xl p-8 shadow-2xl border border-primary/20 max-h-[90vh] overflow-y-auto">
+   <!-- ========================================== -->
+    <!-- MODAL DE COMPRA (DISEÑO MEJORADO) -->
+    <!-- ========================================== -->
+    <div id="purchase-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4 sm:p-6">
+        
+        <!-- Fondo Oscuro -->
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-md transition-opacity duration-300" onclick="closePurchaseModal()"></div>
+        
+        <!-- Contenido (Ancho Ajustable) -->
+        <div class="relative w-full max-w-4xl bg-surface-dark rounded-3xl shadow-2xl border border-primary/20 overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
             
-            <button onclick="closePurchaseModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+            <!-- Botón Cerrar -->
+            <button onclick="closePurchaseModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10 p-2 bg-black/20 rounded-full">
                 <span class="material-symbols-outlined">close</span>
             </button>
 
-            <h2 class="text-2xl font-bold mb-4">Activar Licencia</h2>
+            <!-- COLUMNA IZQUIERDA: MÉTODOS DE PAGO (Oscura) -->
+            <div class="w-full md:w-5/12 bg-black/40 p-6 md:p-8 border-b md:border-b-0 md:border-r border-white/5 flex flex-col">
+                <h2 class="text-2xl font-extrabold text-white mb-1">Activar Licencia</h2>
+                <p class="text-gray-400 text-xs mb-6">Selecciona cómo deseas pagar.</p>
 
-            <!-- TABS DE SELECCIÓN -->
-            <div class="flex gap-2 mb-6 p-1 bg-black/40 rounded-lg">
-                <button onclick="switchPayment('bs')" id="tab-bs" class="flex-1 py-2 text-sm font-bold rounded-md bg-primary text-background-dark transition-all">
-                    Bolívares (Pago Móvil)
-                </button>
-                <button onclick="switchPayment('usd')" id="tab-usd" class="flex-1 py-2 text-sm font-bold rounded-md text-gray-400 hover:text-white transition-all flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-sm">payments</span> PayPal / Tarjeta
-                </button>
-            </div>
-
-            <!-- OPCIÓN A: PAGO MÓVIL (BS) -->
-           <!-- SECCIÓN DE DATOS BANCARIOS (CON BOTONES DE COPIAR) -->
-            <div id="section-bs" class="bg-black/40 p-5 rounded-xl border border-primary/20 mb-6">
-                <div class="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
-                    <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
-                    <h4 class="text-sm font-bold text-white uppercase tracking-wider">Pago Móvil (Bolívares)</h4>
-                </div>
-
-                <div class="space-y-3 text-sm">
-                    
-                    <!-- 1. BANCO -->
-                    <div class="flex justify-between items-center group">
-                        <span class="text-gray-400">Banco:</span>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono text-white font-bold tracking-wide">0105 (Mercantil)</span>
-                            <button type="button" onclick="copyText('0105', this)" class="text-gray-500 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-white/5" title="Copiar Banco">
-                                <span class="material-symbols-outlined text-[18px]">content_copy</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 2. TELÉFONO -->
-                    <div class="flex justify-between items-center group">
-                        <span class="text-gray-400">Teléfono:</span>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono text-white font-bold tracking-wide">0424-3454032</span>
-                            <button type="button" onclick="copyText('04243454032', this)" class="text-gray-500 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-white/5" title="Copiar Teléfono">
-                                <span class="material-symbols-outlined text-[18px]">content_copy</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 3. RIF -->
-                    <div class="flex justify-between items-center group">
-                        <span class="text-gray-400">Cédula/RIF:</span>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono text-white font-bold tracking-wide">J-506818817</span>
-                            <button type="button" onclick="copyText('J506818817', this)" class="text-gray-500 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-white/5" title="Copiar RIF">
-                                <span class="material-symbols-outlined text-[18px]">content_copy</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="border-t border-white/10 my-2"></div>
-
-                    <!-- 4. MONTO DINÁMICO -->
-                    <div class="flex justify-between items-center bg-primary/10 -mx-2 px-3 py-2 rounded-lg border border-primary/20">
-                        <span class="text-primary font-bold text-xs uppercase">Monto Exacto:</span>
-                        <div class="flex items-center gap-2">
-                            <span id="display-saas-price-bs" class="font-mono text-white font-extrabold text-lg">Cargando...</span>
-                            <button type="button" id="btn-copy-price" class="text-primary hover:text-white transition-colors p-1 rounded-lg hover:bg-primary/20" title="Copiar Monto">
-                                <span class="material-symbols-outlined text-[18px]">content_copy</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 5. BOTÓN COPIAR TODO -->
-                    <button type="button" onclick="copyAllSaasData(this)" class="w-full mt-4 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 p-2.5 rounded-lg transition-all font-bold text-xs uppercase tracking-wider group">
-                        <span class="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">content_paste</span>
-                        Copiar Todos los Datos
+                <!-- Tabs -->
+                <div class="flex p-1 bg-surface-dark rounded-xl mb-6 border border-white/5">
+                    <button onclick="switchPayment('bs')" id="tab-bs" class="flex-1 py-2.5 text-xs font-bold rounded-lg bg-primary text-background-dark shadow-lg transition-all">
+                        Pago Móvil (Bs)
+                    </button>
+                    <button onclick="switchPayment('usd')" id="tab-usd" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all">
+                        PayPal ($)
                     </button>
                 </div>
-            </div>
 
-            <!-- FORMULARIO DE REPORTE -->
-            <form id="saas-form" class="space-y-4">
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Tus Datos</label>
-                    <input type="text" id="buyer-name" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Tu Nombre Completo">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="tel" id="buyer-ci" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Cédula (V123...)">
-                    <input type="tel" id="buyer-phone" required class="bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Teléfono">
-                </div>
-                
-                <input type="email" id="buyer-email" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none" placeholder="Tu Correo (Aquí llegarán los accesos)">
-                
-                <hr class="border-white/10">
-                
-                <div>
-                    <label class="block text-xs text-primary mb-1 uppercase font-bold">Nombre de tu Rifa</label>
-                    <input type="text" id="raffle-name" required class="w-full bg-primary/10 border border-primary/30 rounded-lg p-3 text-white focus:border-primary outline-none font-bold placeholder-gray-500" placeholder="Ej: Gran Sorteo 2026">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 pt-2">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Fecha Pago</label>
-                        <input type="date" id="payment-date" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white focus:border-primary outline-none">
+                <!-- INFO PAGO MÓVIL -->
+                <div id="section-bs" class="flex-1 flex flex-col gap-4">
+                    <div class="space-y-3 text-sm">
+                        <!-- Banco -->
+                        <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                            <span class="text-gray-400 text-xs">Banco</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-white">0105</span>
+                                <button type="button" onclick="copyText('0105', this)" class="text-primary hover:text-white"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+                            </div>
+                        </div>
+                        <!-- Tlf -->
+                        <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                            <span class="text-gray-400 text-xs">Teléfono</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-white">0424-345-4032</span>
+                                <button type="button" onclick="copyText('04243454032', this)" class="text-primary hover:text-white"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+                            </div>
+                        </div>
+                        <!-- RIF -->
+                        <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                            <span class="text-gray-400 text-xs">RIF</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-white">J-506818817</span>
+                                <button type="button" onclick="copyText('J506818817', this)" class="text-primary hover:text-white"><span class="material-symbols-outlined text-sm">content_copy</span></button>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- INPUT DE REFERENCIA MEJORADO -->
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase font-bold" title="Ingresa solo los últimos 6 números">
-                            Referencia <span class="text-primary text-[10px] ml-1 normal-case">(6 últimos dígitos)</span>
-                        </label>
-                        <input 
-                            type="tel" 
-                            id="payment-ref" 
-                            required 
-                            maxlength="6" 
-                            inputmode="numeric" 
-                            pattern="[0-9]*"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                            class="w-full bg-black/30 border border-primary/50 rounded-lg p-3 text-white focus:border-primary outline-none text-center font-mono text-lg tracking-widest placeholder-gray-600" 
-                            placeholder="123456">
+                    <!-- Monto -->
+                    <div class="mt-auto bg-primary/10 p-4 rounded-xl border border-primary/20 text-center">
+                        <p class="text-primary text-xs font-bold uppercase mb-1">Monto Exacto a Transferir</p>
+                        <div class="flex items-center justify-center gap-2">
+                            <span id="display-saas-price-bs" class="text-2xl font-black text-white tracking-tight">--</span>
+                            <button type="button" id="btn-copy-price" class="text-primary hover:text-white"><span class="material-symbols-outlined">content_copy</span></button>
+                        </div>
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-primary hover:bg-green-400 text-background-dark font-bold py-4 rounded-xl transition-all shadow-lg mt-4 transform active:scale-95 shadow-[0_0_20px_rgba(19,236,91,0.3)]">
-                    VERIFICAR Y ACTIVAR
-                </button>
-            </form>
-
-            <!-- OPCIÓN B: PAYPAL (USD) -->
-            <div id="section-usd" class="hidden">
-                <p class="text-gray-400 text-sm mb-4 text-center">Paga de forma segura con protección al comprador:</p>
-                
-                <div class="text-center mb-6">
-                    <span class="text-4xl font-bold text-white" id="display-saas-price-usd">$0.00</span>
-                    <p class="text-xs text-gray-500">Licencia de por vida</p>
+                <!-- INFO PAYPAL -->
+                <div id="section-usd" class="hidden flex-1 flex flex-col justify-center text-center">
+                    <span class="material-symbols-outlined text-6xl text-blue-500 mb-4 mx-auto">payments</span>
+                    <p class="text-white font-bold text-lg mb-1">Pago Seguro Internacional</p>
+                    <p class="text-gray-400 text-xs mb-6">Procesado por PayPal Inc. Protección al comprador incluida.</p>
+                    <div class="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
+                        <p class="text-blue-400 text-xs font-bold uppercase mb-1">Total a Pagar</p>
+                        <span id="display-saas-price-usd" class="text-3xl font-black text-white">$0.00</span>
+                    </div>
                 </div>
-
-                <!-- FORMULARIO SIMPLIFICADO PARA PAYPAL -->
-                <form id="saas-form-usd" class="space-y-4 mb-6">
-                    <input type="text" id="paypal-name" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white" placeholder="Tu Nombre">
-                    <input type="email" id="paypal-email" required class="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white" placeholder="Tu Correo (Para enviarte el acceso)">
-                    <input type="text" id="paypal-raffle-name" required class="w-full bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-white font-bold" placeholder="Nombre de tu Rifa">
-                </form>
-
-                <!-- BOTÓN DE PAYPAL -->
-                <div id="paypal-button-container"></div>
             </div>
 
+            <!-- COLUMNA DERECHA: FORMULARIO (Scrollable) -->
+            <div class="w-full md:w-7/12 p-6 md:p-8 overflow-y-auto bg-surface-dark">
+                
+                <!-- Formulario BS -->
+                <form id="saas-form-bs" class="space-y-5 h-full flex flex-col justify-center">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1.5 font-bold ml-1">Tus Datos Personales</label>
+                            <input type="text" id="buyer-name" required class="w-full bg-black/30 border border-white/10 rounded-xl p-3.5 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Nombre Completo">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="tel" id="buyer-ci" required class="bg-black/30 border border-white/10 rounded-xl p-3.5 text-white text-sm focus:border-primary outline-none" placeholder="Cédula">
+                            <input type="tel" id="buyer-phone" required class="bg-black/30 border border-white/10 rounded-xl p-3.5 text-white text-sm focus:border-primary outline-none" placeholder="Teléfono">
+                        </div>
+                        <input type="email" id="buyer-email" required class="w-full bg-black/30 border border-white/10 rounded-xl p-3.5 text-white text-sm focus:border-primary outline-none" placeholder="Correo Electrónico">
+                    </div>
+
+                    <div class="pt-2 border-t border-white/5">
+                        <label class="block text-xs text-primary mb-1.5 font-bold ml-1">Configuración de tu Rifa</label>
+                        <input type="text" id="raffle-name" required class="w-full bg-primary/5 border border-primary/20 rounded-xl p-3.5 text-white text-sm font-bold focus:border-primary outline-none placeholder-gray-500" placeholder="Nombre del Sorteo (Ej: Gran Rifa 2026)">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-500 mb-1 uppercase font-bold ml-1">Fecha Pago</label>
+                            <input type="date" id="payment-date" required class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 mb-1 uppercase font-bold ml-1">Ref. (6 Dígitos)</label>
+                            <input type="tel" id="payment-ref" required maxlength="6" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full bg-black/30 border border-primary/50 rounded-xl p-3 text-white text-sm focus:border-primary outline-none text-center tracking-widest placeholder-gray-600" placeholder="123456">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-green-500 hover:from-green-400 hover:to-primary text-background-dark font-extrabold py-4 rounded-xl transition-all shadow-lg hover:shadow-primary/20 transform hover:-translate-y-0.5 mt-2">
+                        VERIFICAR Y ACTIVAR
+                    </button>
+                </form>
+
+                <!-- Formulario USD (Oculto por defecto) -->
+                <form id="saas-form-usd" class="space-y-5 hidden h-full flex-col justify-center">
+                     <div class="space-y-4">
+                        <input type="text" id="paypal-name" required class="w-full bg-black/30 border border-white/10 rounded-xl p-3.5 text-white text-sm" placeholder="Tu Nombre">
+                        <input type="email" id="paypal-email" required class="w-full bg-black/30 border border-white/10 rounded-xl p-3.5 text-white text-sm" placeholder="Correo Electrónico">
+                        <input type="text" id="paypal-raffle-name" required class="w-full bg-blue-500/10 border border-blue-500/30 rounded-xl p-3.5 text-white text-sm font-bold" placeholder="Nombre del Sorteo">
+                    </div>
+                    
+                    <div class="mt-auto">
+                        <div id="paypal-button-container"></div>
+                    </div>
+                </form>
+
+            </div>
         </div>
     </div>
 
