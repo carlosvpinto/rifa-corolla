@@ -387,6 +387,9 @@ async function loadConfig() {
             if(titleInput) titleInput.value = data.raffleTitle || "";
             if(codeInput) codeInput.value = data.drawCode || "";
 
+             // 🔴 CARGAR DESCRIPCIÓN
+            if(descriptionInput) descriptionInput.value = data.raffleDescription || "";
+
             // Switch Estado
             if(statusToggle) {
                 statusToggle.checked = !data.isClosed; 
@@ -928,24 +931,35 @@ window.closeReceiptModal = () => {
     document.getElementById('receipt-modal').classList.add('hidden');
 };
 // ==========================================
-// 11. MAPA DE TICKETS (CORREGIDO)
+// 11. MAPA DE TICKETS (LÓGICA BASADA EN FIRESTORE)
 // ==========================================
 let currentMapPage = 0;
 const ITEMS_PER_PAGE = 500; 
 let soldTicketsMap = {}; 
-let currentSelectedTicket = null; // 🔴 VARIABLE NUEVA PARA SABER CUAL SELECCIONASTE
+let currentSelectedTicket = null;
 
 window.openTicketMap = () => {
     // 1. Procesar Ventas
     soldTicketsMap = {};
+    
     allSales.forEach(sale => {
-        sale.numbers.forEach(num => {
+        // 🔍 LÓGICA BASADA EN TUS DATOS DE FIRESTORE:
+        // Si el status es "pendiente_verificacion", lo marcamos como pendiente (Naranja).
+        // Si es cualquier otra cosa (ej: "aprobado"), será verificado (Verde).
+        const isPending = (sale.status === 'pendiente_verificacion');
+
+        // Aseguramos que numbers sea un array (por si acaso viene vacío o nulo)
+        const numbers = Array.isArray(sale.numbers) ? sale.numbers : [];
+
+        numbers.forEach(num => {
             soldTicketsMap[num.toString()] = {
-                name: sale.name,
-                phone: sale.phone,
-                ci: sale.ci,
-                ref: sale.ref,
-                method: sale.paymentMethod
+                name: sale.name || "Cliente",
+                phone: sale.phone || "N/A",
+                ci: sale.ci || "N/A",
+                ref: sale.ref || "N/A",
+                method: sale.paymentMethod || "manual",
+                status: sale.status, // Guardamos el status original
+                isPending: isPending // Booleano para el color
             };
         });
     });
@@ -955,8 +969,7 @@ window.openTicketMap = () => {
     modal.classList.remove('hidden');
     setTimeout(() => {
         modal.classList.remove('opacity-0');
-        // Animación suave del contenedor interno
-        const content = modal.querySelector('.relative'); // Busca el div hijo
+        const content = modal.querySelector('.relative');
         if(content) {
             content.classList.remove('scale-95');
             content.classList.add('scale-100');
@@ -976,7 +989,7 @@ window.closeTicketMap = () => {
     
     setTimeout(() => modal.classList.add('hidden'), 300);
     document.getElementById('ticket-detail-footer').classList.add('hidden');
-    currentSelectedTicket = null; // Limpiar selección
+    currentSelectedTicket = null;
 };
 
 window.renderTicketGrid = () => {
@@ -986,27 +999,37 @@ window.renderTicketGrid = () => {
 
     grid.innerHTML = ''; 
 
+    // Obtener total de tickets configurado
     const totalTickets = window.CURRENT_POOL_SIZE || 100;
     const start = currentMapPage * ITEMS_PER_PAGE;
     const end = Math.min(start + ITEMS_PER_PAGE, totalTickets);
     
     label.innerText = `${start} - ${end - 1}`;
     
-    // Detectar longitud para ceros a la izquierda (ej: 001)
+    // Ceros a la izquierda (ej: 001)
     const padding = (totalTickets - 1).toString().length;
 
     for (let i = start; i < end; i++) {
         const numStr = i.toString().padStart(padding, '0');
-        const isSold = soldTicketsMap.hasOwnProperty(numStr);
+        const ticketData = soldTicketsMap[numStr]; 
+        const isSold = !!ticketData;
 
         const btn = document.createElement('button');
         
         if (isSold) {
-            btn.className = "h-10 bg-primary text-background-dark font-bold rounded flex items-center justify-center text-xs hover:bg-white hover:text-black transition-all shadow-[0_0_10px_rgba(19,236,91,0.3)]";
-            // Al hacer click, guardamos el número
+            // 🎨 LÓGICA DE COLORES
+            if (ticketData.isPending) {
+                // 🟠 NARANJA: Pendiente de Verificación
+                btn.className = "h-10 bg-orange-500 text-white font-bold rounded flex items-center justify-center text-xs hover:bg-orange-400 transition-all shadow-[0_0_10px_rgba(249,115,22,0.3)] border border-orange-400/50";
+            } else {
+                // 🟢 VERDE: Aprobado / Verificado
+                btn.className = "h-10 bg-primary text-background-dark font-bold rounded flex items-center justify-center text-xs hover:bg-white hover:text-black transition-all shadow-[0_0_10px_rgba(19,236,91,0.3)]";
+            }
+            
             btn.onclick = () => showTicketDetail(numStr);
         } else {
-            btn.className = "h-10 bg-white/5 text-gray-500 rounded border border-white/10 flex items-center justify-center text-xs cursor-default opacity-50";
+            // ⚫ GRIS: Libre
+            btn.className = "h-10 bg-white/5 text-gray-500 rounded border border-white/10 flex items-center justify-center text-xs cursor-default opacity-50 hover:bg-white/10";
         }
         
         btn.innerText = numStr;
@@ -1014,94 +1037,75 @@ window.renderTicketGrid = () => {
     }
 };
 
-window.changeMapPage = (direction) => {
-    const totalTickets = window.CURRENT_POOL_SIZE;
-    const maxPage = Math.ceil(totalTickets / ITEMS_PER_PAGE) - 1;
-    const newPage = currentMapPage + direction;
-    
-    if (newPage >= 0 && newPage <= maxPage) {
-        currentMapPage = newPage;
-        renderTicketGrid();
-        const grid = document.getElementById('tickets-grid');
-        if(grid) grid.scrollTop = 0;
-    }
-};
-
 window.showTicketDetail = (numStr) => {
     const data = soldTicketsMap[numStr];
     if (!data) return;
 
-    // 🔴 GUARDAMOS EL TICKET ACTUAL PARA PODER COPIARLO LUEGO
     currentSelectedTicket = numStr;
 
     const footer = document.getElementById('ticket-detail-footer');
     document.getElementById('detail-number').innerText = numStr;
     document.getElementById('detail-name').innerText = data.name;
-    document.getElementById('detail-info').innerText = `${data.ci} • ${data.phone}`;
+
+    // Configuración del Texto de Estado
+    let statusHTML = "";
+    if (data.isPending) {
+        statusHTML = `<span class="text-[10px] font-bold text-orange-400 uppercase tracking-wide bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">⏳ Pendiente Verificación</span>`;
+    } else {
+        statusHTML = `<span class="text-[10px] font-bold text-primary uppercase tracking-wide bg-primary/10 px-2 py-0.5 rounded border border-primary/20">✅ Verificado</span>`;
+    }
+
+    document.getElementById('detail-info').innerHTML = `${data.ci} • ${data.phone}<br><div class="mt-1">${statusHTML}</div>`;
     
+    // Color del Círculo Grande en el Footer
+    const circle = document.getElementById('detail-number');
+    if(data.isPending) {
+        circle.className = "w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-orange-500/20";
+    } else {
+        circle.className = "w-10 h-10 rounded-full bg-primary flex items-center justify-center text-background-dark font-bold text-lg shadow-lg shadow-primary/20";
+    }
+
     footer.classList.remove('hidden');
-    // Pequeña animación para llamar la atención
+    // Reiniciar animación
     footer.classList.remove('animate-pulse');
-    void footer.offsetWidth; // Trigger reflow
+    void footer.offsetWidth; 
     footer.classList.add('animate-pulse');
 };
 
-// Función para Copiar con Animación y Mensaje
+// COPIAR DATOS
 window.copyDetail = async () => {
-    // 1. Validar que haya un ticket seleccionado
     if (!currentSelectedTicket || !soldTicketsMap[currentSelectedTicket]) return;
-    
     const data = soldTicketsMap[currentSelectedTicket];
-
-    // 2. Preparar el texto
-    const textToCopy = `🎟 Ticket: #${currentSelectedTicket}\n👤 Cliente: ${data.name}\n🆔 CI: ${data.ci}\n📱 Tlf: ${data.phone}\n💳 Ref: ${data.ref}`;
+    
+    const estadoTexto = data.isPending ? "Pendiente de Verificación" : "Verificado";
+    const textToCopy = `🎟 Ticket: #${currentSelectedTicket}\n👤 Cliente: ${data.name}\n🆔 CI: ${data.ci}\n📱 Tlf: ${data.phone}\n💳 Ref: ${data.ref}\n📊 Estado: ${estadoTexto}`;
 
     try {
-        // 3. Intentar copiar al portapapeles
         await navigator.clipboard.writeText(textToCopy);
-
-        // --- ÉXITO ---
+        if (typeof showToast === "function") showToast("✅ Datos copiados");
         
-        // A) Mostrar el Toast (Mensaje flotante)
-        // Asegúrate de que la función showToast exista en tu código (la definimos al principio)
-        if (typeof showToast === "function") {
-            showToast("✅ ¡Datos copiados correctamente!");
-        } else {
-            alert("Datos copiados: " + textToCopy); // Fallback por si acaso
-        }
-
-        // B) Animación del Botón
+        // Animación del botón
         const btn = document.getElementById('btn-copy-detail');
         if (btn) {
-            // Guardar estado original
             const originalHTML = btn.innerHTML;
             const originalClasses = btn.className;
-
-            // Cambiar a estado de éxito (Verde y Texto Nuevo)
+            
             btn.innerHTML = `<span class="material-symbols-outlined text-sm">check_circle</span> <span>¡COPIADO!</span>`;
             btn.className = "flex items-center gap-1 text-xs text-green-400 font-bold uppercase tracking-wider transition-all duration-200 scale-110";
-
-            // Regresar al estado original después de 2 segundos
+            
             setTimeout(() => {
                 btn.innerHTML = originalHTML;
                 btn.className = originalClasses;
             }, 2000);
         }
-
     } catch (err) {
-        // --- ERROR ---
-        console.error("Error al copiar:", err);
-        if (typeof showToast === "function") {
-            showToast("Error al copiar", "error");
-        } else {
-            alert("No se pudo copiar automáticamente.");
-        }
+        console.error("Error copiando", err);
     }
 };
 
+// BUSCADOR EN MAPA
 window.searchInMap = (val) => {
     if (!val) { renderTicketGrid(); return; }
-    
     const totalTickets = window.CURRENT_POOL_SIZE;
     const num = parseInt(val);
     
@@ -1109,24 +1113,31 @@ window.searchInMap = (val) => {
         currentMapPage = Math.floor(num / ITEMS_PER_PAGE);
         renderTicketGrid();
         
-        // Esperar a que se renderice para buscar el botón
         setTimeout(() => {
             const padding = (totalTickets - 1).toString().length;
             const targetStr = num.toString().padStart(padding, '0');
             
-            // Buscar el botón específico por su texto
             const buttons = Array.from(document.querySelectorAll('#tickets-grid button'));
             const targetBtn = buttons.find(b => b.innerText === targetStr);
 
             if(targetBtn) {
                 targetBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 targetBtn.classList.add('ring-2', 'ring-white', 'scale-110', 'z-10');
-                
-                // Si está vendido, mostramos el detalle de una vez
-                if (soldTicketsMap[targetStr]) {
-                    showTicketDetail(targetStr);
-                }
+                if (soldTicketsMap[targetStr]) showTicketDetail(targetStr);
             }
         }, 100);
+    }
+};
+
+// PAGINACIÓN
+window.changeMapPage = (direction) => {
+    const totalTickets = window.CURRENT_POOL_SIZE;
+    const maxPage = Math.ceil(totalTickets / ITEMS_PER_PAGE) - 1;
+    const newPage = currentMapPage + direction;
+    if (newPage >= 0 && newPage <= maxPage) {
+        currentMapPage = newPage;
+        renderTicketGrid();
+        const grid = document.getElementById('tickets-grid');
+        if(grid) grid.scrollTop = 0;
     }
 };
