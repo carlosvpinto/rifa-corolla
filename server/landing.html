@@ -52,45 +52,57 @@
             con tu aplicación instalada, lista para vender tickets y validar pagos móviles automáticamente.
         </p>
         
-   <div class="flex flex-col items-center gap-6">
+      <!-- CONTENEDOR DE ACCIONES -->
+        <div class="flex flex-col items-center gap-8 w-full max-w-4xl mx-auto">
             
-            <!-- 1. BOTÓN PRINCIPAL DE COMPRA -->
-            <button id="btn-buy-license" onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-extrabold text-xl px-10 py-5 rounded-2xl transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(19,236,91,0.4)] flex items-center gap-3">
-                <span>Obtener Licencia por $--</span>
-                <span class="material-symbols-outlined text-2xl">rocket_launch</span>
+            <!-- 1. BOTÓN PRINCIPAL (VERDE SÓLIDO ORIGINAL) -->
+            <button id="btn-buy-license" onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-extrabold text-xl px-12 py-5 rounded-2xl transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(19,236,91,0.4)] flex items-center gap-4">
+                <div class="text-left">
+                    <span class="block text-xs font-bold uppercase tracking-widest mb-1 opacity-80">Oferta de Lanzamiento</span>
+                    <span class="block text-2xl">Obtener Licencia por $--</span>
+                </div>
+                <span class="material-symbols-outlined text-4xl">rocket_launch</span>
             </button>
 
-            <!-- 2. ZONA DE DEMOS (DOS BOTONES) -->
-            <div class="flex flex-col sm:flex-row gap-4 w-full justify-center">
+            <!-- SEPARADOR VISUAL -->
+            <div class="flex items-center gap-4 w-full max-w-lg opacity-60">
+                <div class="h-px bg-white/20 flex-1"></div>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">O prueba antes de comprar</span>
+                <div class="h-px bg-white/20 flex-1"></div>
+            </div>
+
+            <!-- 2. ZONA DE DEMOS -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
                 
-                <!-- Demo del Panel Administrativo -->
-                <a href="admin.html?id=demo-pro" target="_blank" class="group flex items-center justify-center gap-3 px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/30 transition-all bg-black/20 backdrop-blur-sm">
-                    <div class="p-2 bg-purple-500/20 rounded-lg text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
-                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                <!-- Demo Admin -->
+                <a href="admin.html?id=demo-pro" target="_blank" class="relative group flex items-center gap-4 px-6 py-4 rounded-xl border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/5 transition-all bg-black/40">
+                    <span class="absolute -top-3 left-6 bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-lg border border-purple-400 tracking-wider">DEMOSTRACIÓN</span>
+                    <div class="p-3 bg-purple-500/10 rounded-lg text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
                     </div>
                     <div class="text-left">
-                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Lado del Dueño</p>
-                        <p class="text-white font-bold">Ver Panel Admin</p>
+                        <p class="text-xs text-purple-300 font-bold uppercase tracking-wider mb-0.5">Rol: Dueño</p>
+                        <p class="text-white font-bold text-lg">Probar Panel Admin</p>
+                        <p class="text-[10px] text-gray-500 mt-1">Clave: <span class="text-white font-mono">2026</span></p>
                     </div>
                 </a>
 
-                <!-- Demo de la Página de Ventas -->
-                <a href="index.html?id=demo-pro" target="_blank" class="group flex items-center justify-center gap-3 px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 hover:border-primary/50 transition-all bg-black/20 backdrop-blur-sm">
-                    <div class="p-2 bg-primary/20 rounded-lg text-primary group-hover:bg-primary group-hover:text-black transition-colors">
-                        <span class="material-symbols-outlined">storefront</span>
+                <!-- Demo Tienda -->
+                <a href="index.html?id=demo-pro" target="_blank" class="relative group flex items-center gap-4 px-6 py-4 rounded-xl border border-blue-500/30 hover:border-blue-500 hover:bg-blue-500/5 transition-all bg-black/40">
+                    <span class="absolute -top-3 left-6 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-lg border border-blue-400 tracking-wider">DEMOSTRACIÓN</span>
+                    <div class="p-3 bg-blue-500/10 rounded-lg text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-2xl">storefront</span>
                     </div>
                     <div class="text-left">
-                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Lado del Cliente</p>
-                        <p class="text-white font-bold">Ver Página de Venta</p>
+                        <p class="text-xs text-blue-300 font-bold uppercase tracking-wider mb-0.5">Rol: Cliente</p>
+                        <p class="text-white font-bold text-lg">Probar Tienda</p>
+                        <p class="text-[10px] text-gray-500 mt-1">Simula una compra</p>
                     </div>
                 </a>
 
             </div>
-
-            <p class="text-xs text-gray-500 mt-2">
-                * Para el Panel Admin usa el PIN: <strong class="text-gray-300">2026</strong>
-            </p>
         </div>
+
         <div class="mt-12 flex flex-wrap justify-center gap-4 md:gap-8 text-gray-500 text-sm font-medium uppercase tracking-widest">
             <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">cloud_done</span> Hosting Incluido</div>
             <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">link</span> Link Propio</div>
