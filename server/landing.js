@@ -176,11 +176,19 @@ if (dateInput) {
 // 4. ENVÍO PAGO MÓVIL (LÓGICA BLINDADA)
 // Buscamos el ID nuevo: 'saas-form-bs'
 const saasFormBs = document.getElementById('saas-form-bs');
+// ==========================================
+// 4. ENVÍO PAGO MÓVIL (CORREGIDO)
+// ==========================================
+// Buscamos el ID NUEVO: 'saas-form-bs'
+
+
+console.log("Estado del Formulario BS:", saasFormBs ? "✅ Encontrado" : "❌ NO ENCONTRADO");
 
 if (saasFormBs) {
     saasFormBs.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // Buscar el botón DENTRO del formulario
         const btn = saasFormBs.querySelector('button[type="submit"]');
         const originalText = btn.innerText;
         
@@ -204,6 +212,7 @@ if (saasFormBs) {
 
         await sendPurchase(data, btn, originalText);
     });
+
 } else {
     console.error("🚨 ERROR CRÍTICO: No se encontró el formulario con id='saas-form'. El botón no hará nada.");
 }
