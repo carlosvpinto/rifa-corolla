@@ -52,21 +52,45 @@
             con tu aplicación instalada, lista para vender tickets y validar pagos móviles automáticamente.
         </p>
         
-        <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <!-- BOTÓN CON PRECIO DINÁMICO -->
-            <button id="btn-buy-license" onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-extrabold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(19,236,91,0.3)] flex items-center justify-center gap-2 text-center">
+   <div class="flex flex-col items-center gap-6">
+            
+            <!-- 1. BOTÓN PRINCIPAL DE COMPRA -->
+            <button id="btn-buy-license" onclick="openPurchaseModal()" class="bg-primary hover:bg-green-400 text-background-dark font-extrabold text-xl px-10 py-5 rounded-2xl transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(19,236,91,0.4)] flex items-center gap-3">
                 <span>Obtener Licencia por $--</span>
+                <span class="material-symbols-outlined text-2xl">rocket_launch</span>
             </button>
 
-              <!-- NUEVO BOTÓN DEMO -->
-            <a href="admin.html?id=demo-pro" target="_blank" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-lg px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined">visibility</span>
-                Ver Demo en Vivo
-            </a>
+            <!-- 2. ZONA DE DEMOS (DOS BOTONES) -->
+            <div class="flex flex-col sm:flex-row gap-4 w-full justify-center">
+                
+                <!-- Demo del Panel Administrativo -->
+                <a href="admin.html?id=demo-pro" target="_blank" class="group flex items-center justify-center gap-3 px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/30 transition-all bg-black/20 backdrop-blur-sm">
+                    <div class="p-2 bg-purple-500/20 rounded-lg text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Lado del Dueño</p>
+                        <p class="text-white font-bold">Ver Panel Admin</p>
+                    </div>
+                </a>
+
+                <!-- Demo de la Página de Ventas -->
+                <a href="index.html?id=demo-pro" target="_blank" class="group flex items-center justify-center gap-3 px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 hover:border-primary/50 transition-all bg-black/20 backdrop-blur-sm">
+                    <div class="p-2 bg-primary/20 rounded-lg text-primary group-hover:bg-primary group-hover:text-black transition-colors">
+                        <span class="material-symbols-outlined">storefront</span>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Lado del Cliente</p>
+                        <p class="text-white font-bold">Ver Página de Venta</p>
+                    </div>
+                </a>
+
+            </div>
+
+            <p class="text-xs text-gray-500 mt-2">
+                * Para el Panel Admin usa el PIN: <strong class="text-gray-300">2026</strong>
+            </p>
         </div>
-        <p class="mt-4 text-xs text-gray-500">
-            Acceso Demo: PIN <strong>2026</strong>
-        </p>
         <div class="mt-12 flex flex-wrap justify-center gap-4 md:gap-8 text-gray-500 text-sm font-medium uppercase tracking-widest">
             <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">cloud_done</span> Hosting Incluido</div>
             <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">link</span> Link Propio</div>
