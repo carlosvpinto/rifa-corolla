@@ -424,6 +424,13 @@ async function loadConfig() {
             window.CURRENT_POOL_SIZE = parseInt(data.totalTickets);
             window.CURRENT_PRICE = parseFloat(data.ticketPrice);
             window.CURRENT_CURRENCY = data.currency;
+
+             if (CLIENT_ID === 'demo-pro') {
+                const banner = document.createElement('div');
+                banner.className = "fixed top-0 left-0 w-full bg-orange-600 text-white text-center text-xs font-bold py-1 z-[200] shadow-lg";
+                banner.innerHTML = "🔧 MODO DEMOSTRACIÓN PÚBLICA - Los datos se reinician cada 24h - No usar para ventas reales";
+                document.body.prepend(banner);
+            }
             
             // Cargar tabla de ventas
             loadData();
