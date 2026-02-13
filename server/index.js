@@ -7,6 +7,19 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 require('dotenv').config();
 
+
+const path = require('path'); // Asegúrate de que esté arriba con los otros require
+
+// Esto hace que TODOS tus archivos (index.html, admin.html, master.html, JS, CSS)
+// sean accesibles automáticamente por su nombre.
+app.use(express.static(__dirname)); 
+
+// Ruta para la página de inicio (Landing)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'landing.html'));
+});
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -314,8 +327,8 @@ app.post('/api/saas/buy', async (req, res) => {
 
     // 6. ENVIAR CORREOS
     // ⚠️ CAMBIA ESTO:
-    const APP_URL = "http://127.0.0.1:5501"; // URL LOCAL
-    // const APP_URL = "https://rifa-carros-corolla.vercel.app"; // PRODUCCIÓN
+    //const APP_URL = "http://127.0.0.1:5501"; // URL LOCAL
+    const APP_URL = "https://rifa-carros-corolla.vercel.app"; // PRODUCCIÓN
 
     const clientMailOptions = {
         from: `Soporte Software <${process.env.EMAIL_USER}>`,
