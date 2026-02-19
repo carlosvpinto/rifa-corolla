@@ -18,27 +18,48 @@ let SOFTWARE_PRICE_VES = 0;
 let USER_COUNTRY = 'VE'; 
 
 // ==========================================
-// 1. CARGAR DATOS + GEOLOCALIZACIÓN
+// 1. CARGAR DATOS + GEOLOCALIZACIÓN (OPTIMIZADO)
 // ==========================================
 async function initLanding() {
     try {
-        console.log("🌍 Iniciando sistema de ventas...");
+        console.log("🌍 Iniciando sistema...");
         
+        // Función auxiliar para geolocalización con timeout de 1 segundo
+        const fetchGeo = () => {
+            return new Promise((resolve) => {
+                const timer = setTimeout(() => resolve({ country_code: 'VE' }), 1000); // Si tarda > 1s, usa VE
+                
+                fetch('https://ipapi.co/json/')
+                    .then(res => {
+                        if(!res.ok) throw new Error("Bloqueo CORS o Red");
+                        return res.json();
+                    })
+                    .then(data => {
+                        clearTimeout(timer);
+                        resolve(data);
+                    })
+                    .catch(() => {
+                        clearTimeout(timer);
+                        resolve({ country_code: 'VE' }); // Fallback silencioso
+                    });
+            });
+        };
+
+        // Ejecutamos todo en paralelo
         const [configRes, rateRes, geoRes] = await Promise.all([
-            fetch(MASTER_CONFIG_URL),
-            fetch(API_RATE),
-            fetch('https://ipapi.co/json/').then(r => r.json()).catch(() => ({ country_code: 'VE' }))
+            fetch(MASTER_CONFIG_URL).catch(e => ({ json: () => ({}) })), // Evita romper si falla
+            fetch(API_RATE).catch(e => ({ json: () => ({}) })),
+            fetchGeo()
         ]);
 
-        const configData = await configRes.json();
-        const rateData = await rateRes.json();
+        const configData = await configRes.json ? await configRes.json() : {};
+        const rateData = await rateRes.json ? await rateRes.json() : {};
+        
         USER_COUNTRY = geoRes.country_code || 'VE';
-
-        //USER_COUNTRY= 'US';
 
         // 1. Configurar Precios
         if (configData.softwarePrice) SOFTWARE_PRICE_USD = parseFloat(configData.softwarePrice);
-        if (rateData.rate) EXCHANGE_RATE = parseFloat(rateData.rate); else EXCHANGE_RATE = 60; 
+        if (rateData && rateData.rate) EXCHANGE_RATE = parseFloat(rateData.rate); else EXCHANGE_RATE = 60; 
 
         SOFTWARE_PRICE_VES = SOFTWARE_PRICE_USD * EXCHANGE_RATE;
         const vesFormatted = SOFTWARE_PRICE_VES.toFixed(2);
@@ -47,43 +68,37 @@ async function initLanding() {
 
         // --- ACTUALIZAR INTERFAZ ---
 
-        // A. Precio Grande (Sección de abajo) - Siempre en USD
-        const bigPrice = document.getElementById('display-price-big');
-        if (bigPrice) bigPrice.innerText = `$${SOFTWARE_PRICE_USD}`;
-
-        // B. Modal: Precio en Bolívares
-        const modalPriceBs = document.getElementById('display-saas-price-bs');
-        if (modalPriceBs) modalPriceBs.innerText = `Bs. ${vesFormatted}`;
-
-        // C. Modal: Precio en Dólares (PayPal)
-        const modalPriceUsd = document.getElementById('display-saas-price-usd');
-        if (modalPriceUsd) modalPriceUsd.innerText = `$${SOFTWARE_PRICE_USD}`;
-
-        // D. Botón Principal (Header)
         const btnDisplay = document.getElementById('btn-buy-license');
+        const bigPrice = document.getElementById('display-price-big');
+        const modalPriceBs = document.getElementById('display-saas-price-bs');
+        const modalPriceUsd = document.getElementById('display-saas-price-usd');
         const tabBs = document.getElementById('tab-bs');
+        const copyPriceBtn = document.getElementById('btn-copy-price');
 
+        // Textos
+        if (bigPrice) bigPrice.innerText = `$${SOFTWARE_PRICE_USD}`;
+        if (modalPriceBs) modalPriceBs.innerText = `Bs. ${vesFormatted}`;
+        if (modalPriceUsd) modalPriceUsd.innerText = `$${SOFTWARE_PRICE_USD}`;
+        if (copyPriceBtn) copyPriceBtn.onclick = function() { copyText(vesFormatted, this); };
+
+        // Botón y Tabs según País
         if (USER_COUNTRY === 'VE') {
-            // MODO VENEZUELA
             if (btnDisplay) {
                 btnDisplay.innerHTML = `Obtener Licencia <br><span class="text-sm font-normal">$${SOFTWARE_PRICE_USD} (Bs. ${vesFormatted})</span>`;
             }
-            // Asegurar que el botón de copiar copie Bs
-            const copyPriceBtn = document.getElementById('btn-copy-price');
-            if (copyPriceBtn) copyPriceBtn.onclick = function() { copyText(vesFormatted, this); };
-
         } else {
-            // MODO INTERNACIONAL
             if (btnDisplay) {
                 btnDisplay.innerHTML = `Obtener Licencia <br><span class="text-sm font-normal">Precio Único: $${SOFTWARE_PRICE_USD}</span>`;
             }
-            // Ocultar pestaña Bs y forzar USD
             if (tabBs) tabBs.classList.add('hidden');
             switchPayment('usd');
         }
 
     } catch (error) {
-        console.error("Error inicializando:", error);
+        console.error("Error inicializando (Usando defaults):", error);
+        // Fallback visual si todo falla
+        const btnDisplay = document.getElementById('btn-buy-license');
+        if(btnDisplay) btnDisplay.innerText = "Obtener Licencia";
     }
 }
 
@@ -154,8 +169,6 @@ window.copyAllSaasData = (btnElement) => {
 const modal = document.getElementById('purchase-modal');
 const saasForm = document.getElementById('saas-form'); // <--- BUSCAMOS EL ID
 
-// Depuración: Verifica si encontró el formulario
-console.log("Estado del Formulario:", saasForm ? "✅ Encontrado" : "❌ NO ENCONTRADO (Revisa el ID en HTML)");
 
 window.openPurchaseModal = () => { 
     if(modal) {
@@ -174,21 +187,13 @@ if (dateInput) {
 }
 
 // 4. ENVÍO PAGO MÓVIL (LÓGICA BLINDADA)
-// Buscamos el ID nuevo: 'saas-form-bs'
+// 4. ENVÍO PAGO MÓVIL
 const saasFormBs = document.getElementById('saas-form-bs');
-// ==========================================
-// 4. ENVÍO PAGO MÓVIL (CORREGIDO)
-// ==========================================
-// Buscamos el ID NUEVO: 'saas-form-bs'
-
-
-console.log("Estado del Formulario BS:", saasFormBs ? "✅ Encontrado" : "❌ NO ENCONTRADO");
 
 if (saasFormBs) {
     saasFormBs.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Buscar el botón DENTRO del formulario
         const btn = saasFormBs.querySelector('button[type="submit"]');
         const originalText = btn.innerText;
         
@@ -212,9 +217,8 @@ if (saasFormBs) {
 
         await sendPurchase(data, btn, originalText);
     });
-
 } else {
-    console.error("🚨 ERROR CRÍTICO: No se encontró el formulario con id='saas-form'. El botón no hará nada.");
+    console.warn("⚠️ Formulario Pago Móvil no detectado en esta vista.");
 }
 
 // 5. ENVÍO PAYPAL
@@ -258,49 +262,79 @@ if (window.paypal) {
 }
 
 // 6. FUNCIÓN DE ENVÍO (ACTUALIZADA)
+// ==========================================
+// 6. FUNCIÓN DE ENVÍO (VERSIÓN FINAL)
+// ==========================================
 async function sendPurchase(data, btn, originalText) {
+    // 1. Definir elementos del DOM que usaremos al finalizar
+    const successModal = document.getElementById('saas-success-modal');
+    const emailDisplay = document.getElementById('success-email-display');
+    const goBtn = document.getElementById('btn-go-dashboard');
+
     try {
+        console.log("📤 Enviando datos de compra...", data);
+
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
+        
+        // Intentamos obtener la respuesta del servidor
         const result = await response.json();
 
         if (response.ok) {
-            // 1. Cerrar Modal de Pago
+            console.log("✅ Compra procesada con éxito:", result);
+
+            // A. Cerrar el modal de formulario
             closePurchaseModal();
             
-            // 2. Configurar Modal de Éxito
-            const successModal = document.getElementById('saas-success-modal');
-            const emailDisplay = document.getElementById('success-email-display');
-            const goBtn = document.getElementById('btn-go-dashboard');
-
-            // Poner el correo real
-            if (emailDisplay) emailDisplay.innerText = data.buyerData.email;
+            // B. Configurar el modal de éxito con los datos recibidos
+            if (emailDisplay) {
+                emailDisplay.innerText = data.buyerData.email;
+            }
             
-            // Configurar botón
+            // C. Determinar la URL de redirección (prioridad a la que envíe el servidor)
+            const finalUrl = result.redirectUrl || '/index.html';
+
+            // D. Configurar el botón de acción del modal de éxito
             if (goBtn) {
                 goBtn.onclick = () => {
-                    window.location.href = result.redirectUrl;
+                    window.location.href = finalUrl;
                 };
             }
 
-            // 3. Mostrar Modal
-            if (successModal) successModal.classList.remove('hidden');
+            // E. Mostrar el modal de éxito (Premium)
+            if (successModal) {
+                successModal.classList.remove('hidden');
+            }
 
-            // (Opcional) Redirección automática en 10 segundos por si acaso
+            // F. Redirección automática de respaldo tras 10 segundos
             setTimeout(() => {
-                window.location.href = result.redirectUrl;
+                if (window.location.pathname !== finalUrl) {
+                    window.location.href = finalUrl;
+                }
             }, 10000);
 
         } else {
-            alert("❌ " + (result.error || "Error en la compra"));
-            if(btn.innerText) { btn.innerText = originalText; btn.disabled = false; }
+            // Manejo de errores del servidor (402, 400, 500, etc.)
+            console.error("❌ Error del servidor:", result);
+            alert("⚠️ Error: " + (result.message || result.error || "No se pudo validar el pago. Verifica los datos."));
+            
+            // Restaurar el botón para que el usuario pueda intentar corregir
+            if (btn) {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
     } catch (error) {
-        console.error(error);
-        alert("Error de conexión");
-        if(btn.innerText) { btn.innerText = originalText; btn.disabled = false; }
+        // Errores de red o de código local
+        console.error("🚨 Error crítico en sendPurchase:", error);
+        alert("Error de conexión: No se pudo contactar con el servidor. Intenta de nuevo.");
+        
+        if (btn) {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }
 }
