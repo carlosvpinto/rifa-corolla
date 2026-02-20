@@ -992,6 +992,57 @@ window.openTicketMap = () => {
     renderTicketGrid();
 };
 
+// ==========================================
+// 11. SEGURIDAD MODO DEMO
+// ==========================================
+function protectDemoMode() {
+    // Solo aplica si el usuario es 'demo-pro'
+    if (CLIENT_ID !== 'demo-pro') return;
+
+    // Lista de IDs de campos sensibles a bloquear
+    const sensitiveFields = [
+        'bank-name-input', 
+        'bank-code-input', 
+        'payment-phone-input', 
+        'payment-ci-input', 
+        'binance-email-input', 
+        'zelle-email-input',
+        'new-admin-pin' // También bloqueamos cambiar el PIN
+    ];
+
+    sensitiveFields.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            // 1. Deshabilitar el input
+            input.disabled = true;
+            input.value = "PROTEGIDO EN DEMO"; // Opcional: Ocultar el valor real
+            
+            // 2. Estilos visuales de bloqueo
+            input.classList.add('opacity-50', 'cursor-not-allowed', 'bg-red-900/20');
+            
+            // 3. Agregar evento al contenedor padre para mostrar alerta al hacer click
+            // (Los inputs disabled no disparan eventos click, por eso usamos el padre)
+            if (input.parentElement) {
+                input.parentElement.onclick = () => {
+                    showToast("⛔ Acción bloqueada en MODO DEMO", 'error');
+                };
+            }
+        }
+    });
+
+    // También bloqueamos el botón de guardar imágenes para evitar spam en el storage
+    const imgBtn = document.querySelector('button[onclick="saveImagesToBackend()"]');
+    if(imgBtn) {
+        imgBtn.disabled = true;
+        imgBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        imgBtn.parentElement.onclick = () => showToast("⛔ Subida de imágenes bloqueada en DEMO", 'error');
+    }
+}
+
+// EJECUTAR AL CARGAR
+// Lo llamamos después de un pequeño tiempo para asegurar que loadConfig haya llenado los campos primero
+setTimeout(protectDemoMode, 2000);
+
 window.closeTicketMap = () => {
     const modal = document.getElementById('map-modal');
     modal.classList.add('opacity-0');
