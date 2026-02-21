@@ -2,14 +2,14 @@
 // CONFIGURACIÓN (LOCAL / PROD)
 // ==========================================
 // ⚠️ URL DE PRODUCCIÓN
-// const API_URL = "https://rifa-carros-corolla.onrender.com/api/saas/buy";
-// const MASTER_CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/master/config";
+// const API_URL = "https://vendeturifa.com/api/saas/buy";
+// const MASTER_CONFIG_URL = "https://vendeturifa.com/api/master/config";
 // const API_RATE = "http://localhost:3000/api/api/tasa";
 
 // ⚠️ URL LOCAL
-const API_URL = "https://rifa-carros-corolla.onrender.com/api/saas/buy";
-const MASTER_CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/master/config";
-const API_RATE = "https://rifa-carros-corolla.onrender.com/api/tasa";
+const API_URL = "https://vendeturifa.com/api/saas/buy";
+const MASTER_CONFIG_URL = "https://vendeturifa.com/api/master/config";
+const API_RATE = "https://vendeturifa.com/api/tasa";
 
 // Variables Globales
 let SOFTWARE_PRICE_USD = 50; 

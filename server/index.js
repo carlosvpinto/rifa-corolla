@@ -334,7 +334,7 @@ app.post('/api/saas/buy', async (req, res) => {
     // 6. ENVIAR CORREOS
     // ⚠️ CAMBIA ESTO:
     //const APP_URL = "http://localhost:3000"; // URL LOCAL
-    const APP_URL = "https://rifa-carros-corolla.onrender.com"; // PRODUCCIÓN
+    const APP_URL = "https://vendeturifa.com"; // PRODUCCIÓN
 
     const clientMailOptions = {
         from: `Soporte Software <${process.env.EMAIL_USER}>`,

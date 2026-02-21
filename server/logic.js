@@ -9,15 +9,15 @@ const CLIENT_ID = urlParams.get('id') || 'demo'; // 'demo' es tu rifa personal
 
 // 2. CONFIGURACIÓN DINÁMICA
 // ⚠️ URL PRODUCCIÓN
-//const BASE_API = "https://rifa-carros-corolla.onrender.com/api";
-const BASE_API = "https://rifa-carros-corolla.onrender.com/api";
+//const BASE_API = "https://vendeturifa.com/api";
+const BASE_API = "https://vendeturifa.com/api";
 const BACKEND_URL = `${BASE_API}/${CLIENT_ID}/comprar`;
 const CONFIG_URL = `${BASE_API}/${CLIENT_ID}/config`;
 
 // ... (El resto del archivo sigue igual) Local
 
-//const BACKEND_URL = "https://rifa-carros-corolla.onrender.com/api/comprar";
-//const CONFIG_URL = "https://rifa-carros-corolla.onrender.com/api/config";
+//const BACKEND_URL = "https://vendeturifa.com/api/comprar";
+//const CONFIG_URL = "https://vendeturifa.com/api/config";
 
 // Variables Globales
 let TICKET_PRICE = 5; 

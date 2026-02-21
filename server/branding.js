@@ -29,9 +29,9 @@ if (backBtn) {
 }
 
 // ⚠️ URL DE PRODUCCIÓN (RENDER)
-// const BASE_API = "https://rifa-carros-corolla.onrender.com/api";
+// const BASE_API = "https://vendeturifa.com/api";
 // ⚠️ URL LOCAL (PARA PRUEBAS)
-const BASE_API = "https://rifa-carros-corolla.onrender.com/api";
+const BASE_API = "https://vendeturifa.com/api";
 
 const API_URL = `${BASE_API}/${CLIENT_ID}/config`;
 

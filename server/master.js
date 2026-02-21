@@ -1,9 +1,9 @@
 // master.js
 
 // ⚠️ URL DE PRODUCCIÓN (Render)
-//const API_BASE = "https://rifa-carros-corolla.onrender.com/api/master";
+//const API_BASE = "https://vendeturifa.com/api/master";
 // ⚠️ URL LOCAL
-const API_BASE = "https://rifa-carros-corolla.onrender.com/api/master"; 
+const API_BASE = "https://vendeturifa.com/api/master"; 
 
 // Elementos DOM
 const loginScreen = document.getElementById('login-screen');
