@@ -15,18 +15,10 @@ const app = express();
 // 3. TERCERO: CONFIGURAR LOS USES
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
+// Servir archivos estáticos pero desactivar el index automático
+app.use(express.static(__dirname, { index: false }));
 
 
-
-
-// Esto hace que TODOS tus archivos (index.html, admin.html, master.html, JS, CSS)
-
-
-// Ruta para la página de inicio (Landing)
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'landing.html'));
-});
 
 
 
@@ -179,7 +171,10 @@ async function getAvailableNumbers(raffleId, totalTickets) {
 // 4. ENDPOINTS
 // ==========================================
 
-app.get('/', (req, res) => res.send('API SaaS Rifa Activa 🚀'));
+// 🔴 RUTA PRINCIPAL: Mostrar la Landing Page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'landing.html'));
+});
 
 // 🔴 ENDPOINT TASA (BCV)
 app.get('/api/tasa', async (req, res) => {
