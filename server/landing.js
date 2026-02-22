@@ -62,7 +62,11 @@ async function initLanding() {
         if (rateData && rateData.rate) EXCHANGE_RATE = parseFloat(rateData.rate); else EXCHANGE_RATE = 60; 
 
         SOFTWARE_PRICE_VES = SOFTWARE_PRICE_USD * EXCHANGE_RATE;
-        const vesFormatted = SOFTWARE_PRICE_VES.toFixed(2);
+        // 🔴 CAMBIO AQUÍ: Usamos toLocaleString para formato "1.234,56"
+        const vesFormatted = SOFTWARE_PRICE_VES.toLocaleString('es-VE', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+        });
 
         console.log(`📍 País: ${USER_COUNTRY} | Precio: $${SOFTWARE_PRICE_USD} | Tasa: ${EXCHANGE_RATE}`);
 
@@ -84,7 +88,7 @@ async function initLanding() {
         // Botón y Tabs según País
         if (USER_COUNTRY === 'VE') {
             if (btnDisplay) {
-                btnDisplay.innerHTML = `Obtener Licencia <br><span class="text-sm font-normal">$${SOFTWARE_PRICE_USD} (Bs. ${vesFormatted})</span>`;
+                btnDisplay.innerHTML = `Obtener Licencia <br><span class="text-sm font-normal">$${SOFTWARE_PRICE_USD} (Bs.${vesFormatted})</span>`;
             }
         } else {
             if (btnDisplay) {
