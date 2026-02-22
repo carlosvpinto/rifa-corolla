@@ -378,6 +378,24 @@ app.post('/api/saas/buy', async (req, res) => {
   }
 });
 
+// G. ELIMINAR VENTA (LIBERAR NÚMEROS)
+app.post('/api/:raffleId/delete-sale', async (req, res) => {
+    try {
+        const { raffleId } = req.params;
+        const { saleId } = req.body;
+
+        if (!saleId) return res.status(400).json({ error: "Falta ID de venta" });
+
+        // Borrar el documento de la colección 'sales'
+        await RAFFLES_COLLECTION.doc(raffleId).collection('sales').doc(saleId).delete();
+
+        res.json({ success: true, message: "Venta eliminada y números liberados" });
+    } catch(e) { 
+        console.error(e);
+        res.status(500).json({ error: e.message }); 
+    }
+});
+
 // --- C. RIFAS CLIENTES ---
 
 app.post('/api/:raffleId/config', async (req, res) => {

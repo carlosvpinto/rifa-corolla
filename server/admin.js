@@ -631,7 +631,7 @@ function renderTable(data) {
     }
 
     data.forEach(sale => {
-        // 1. Formateo de Fecha
+        // 1. Fecha
         let dateStr = "N/A";
         if (sale.dateObj && sale.dateObj.toDate) {
             dateStr = sale.dateObj.toDate().toLocaleDateString('es-VE', { 
@@ -640,101 +640,84 @@ function renderTable(data) {
         }
         const saleCurrency = sale.currency || window.CURRENT_CURRENCY;
 
-        // 2. Lógica de Iconos de Pago (Binance/Zelle/PM)
+        // 2. Iconos Pago
         let methodIcon = '';
         if (sale.paymentMethod === 'binance') methodIcon = '<span class="text-yellow-400 font-bold text-[9px] mr-1">BINANCE</span>';
         else if (sale.paymentMethod === 'zelle') methodIcon = '<span class="text-purple-400 font-bold text-[9px] mr-1">ZELLE</span>';
         else methodIcon = '<span class="text-blue-400 font-bold text-[9px] mr-1">PAGO MÓVIL</span>';
 
-        // 3. Botón de Ver Recibo (Si existe URL)
+        // 3. Botón Recibo
         let receiptBtn = '';
         if (sale.receiptUrl) {
-            receiptBtn = `
-                <button onclick="viewReceipt('${sale.receiptUrl}')" class="text-gray-400 hover:text-white ml-1 transition-colors" title="Ver Comprobante">
-                    <span class="material-symbols-outlined text-[16px] align-middle">image</span>
-                </button>
-            `;
+            receiptBtn = `<button onclick="viewReceipt('${sale.receiptUrl}')" class="text-gray-400 hover:text-white ml-1 transition-colors" title="Ver Comprobante"><span class="material-symbols-outlined text-[16px] align-middle">image</span></button>`;
         }
 
-        // 4. Lógica de Estado (Pendiente vs Listo)
+        // 4. Estado y Acciones
         const isPending = sale.verificationMethod === 'manual';
-        let statusIcon;
+        let statusAction;
 
         if (isPending) {
-            // Botón para validar manualmente
-            statusIcon = `
-                <button onclick="approveSale('${sale.id}', '${sale.name}')" 
-                        class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 group border border-orange-500/20 ml-auto mt-1"
-                        title="Click para confirmar el pago">
+            // Si está pendiente: Botón Validar (Naranja)
+            statusAction = `
+                <button onclick="approveSale('${sale.id}', '${sale.name}')" class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 px-2 py-1 rounded-lg flex items-center gap-1 group border border-orange-500/20 transition-all">
                     <span class="material-symbols-outlined text-[16px]">pending_actions</span>
                     <span class="text-[10px] font-bold uppercase group-hover:underline">Validar</span>
                 </button>
             `;
         } else {
-            // Estado verificado
-            statusIcon = `
-                <div class="flex items-center justify-end gap-1 text-primary mt-1 opacity-80">
+            // Si está listo: Check Verde
+            statusAction = `
+                <div class="flex items-center gap-1 text-primary opacity-80 cursor-default">
                     <span class="text-[10px] font-bold uppercase tracking-wider">Listo</span>
                     <span class="material-symbols-outlined text-[18px]">verified</span>
                 </div>
             `;
         }
 
+        // 🔴 BOTÓN ELIMINAR (NUEVO)
+        const deleteBtn = `
+            <button onclick="deleteSale('${sale.id}')" class="p-1.5 rounded-lg text-red-500/50 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-2" title="Eliminar Venta">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+        `;
+
         const row = document.createElement('tr');
         row.className = "hover:bg-white/5 transition-colors border-b border-white/5";
         
         row.innerHTML = `
-            <!-- Fecha (Solo PC) -->
-            <td class="p-3 text-gray-400 text-[10px] hidden sm:table-cell whitespace-nowrap align-top">
-                ${dateStr}
-            </td>
+            <td class="p-3 text-gray-400 text-[10px] hidden sm:table-cell whitespace-nowrap align-top">${dateStr}</td>
             
-            <!-- Cliente -->
             <td class="p-3 align-top">
-                <div class="font-bold text-white text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none">
-                    ${sale.name}
-                </div>
-                <div class="text-[10px] text-primary sm:hidden">
-                    ${sale.ci}
-                </div>
+                <div class="font-bold text-white text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none">${sale.name}</div>
+                <div class="text-[10px] text-primary sm:hidden">${sale.ci}</div>
             </td>
 
-            <!-- Referencia + Método + Recibo -->
             <td class="p-3 align-top">
                 <div class="flex flex-col items-start">
-                    <span class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded text-[10px] tracking-wider">
-                        ${sale.ref}
-                    </span>
-                    <div class="mt-1 flex items-center">
-                        ${methodIcon}
-                        ${receiptBtn}
-                    </div>
+                    <span class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded text-[10px] tracking-wider">${sale.ref}</span>
+                    <div class="mt-1 flex items-center">${methodIcon}${receiptBtn}</div>
                 </div>
             </td>
 
-            <!-- Contacto (Solo PC) -->
             <td class="p-3 text-gray-400 text-xs hidden sm:table-cell align-top">
-                <span class="text-primary font-bold">${sale.ci}</span><br>
-                ${sale.phone}
+                <span class="text-primary font-bold">${sale.ci}</span><br>${sale.phone}
             </td>
 
-            <!-- Tickets (Scroll en Móvil, Wrap en PC) -->
             <td class="p-3 max-w-[120px] sm:max-w-none align-top">
                 <div class="flex gap-1 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-1">
-                    ${sale.numbers.map(n => `
-                        <span class="bg-surface-highlight border border-white/10 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0">
-                            ${n}
-                        </span>
-                    `).join('')}
+                    ${sale.numbers.map(n => `<span class="bg-surface-highlight border border-white/10 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap flex-shrink-0">${n}</span>`).join('')}
                 </div>
             </td>
 
-            <!-- Monto + Acción -->
+            <!-- COLUMNA DE ACCIONES -->
             <td class="p-3 text-right align-top">
-                <div class="font-bold text-green-400 text-xs sm:text-sm whitespace-nowrap">
-                     ${sale.totalAmount.toFixed(2)} ${saleCurrency}
+                <div class="font-bold text-green-400 text-xs sm:text-sm whitespace-nowrap mb-1">
+                    ${saleCurrency} ${sale.totalAmount.toFixed(2)}
                 </div>
-                ${statusIcon}
+                <div class="flex justify-end items-center">
+                    ${statusAction}
+                    ${deleteBtn} <!-- Aquí va el botón rojo -->
+                </div>
             </td>
         `;
         tableBody.appendChild(row);
@@ -1188,6 +1171,34 @@ window.searchInMap = (val) => {
                 if (soldTicketsMap[targetStr]) showTicketDetail(targetStr);
             }
         }, 100);
+    }
+};
+
+// ELIMINAR VENTA
+window.deleteSale = async (saleId) => {
+    // 1. Confirmación de seguridad
+    if (!await showConfirm("¿Eliminar Venta?", "Esta acción es irreversible. Los números quedarán libres para la venta nuevamente.")) return;
+
+    showToast("Eliminando...", 'success');
+
+    try {
+        const response = await fetch(`${CLIENT_API_URL}/delete-sale`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ saleId: saleId })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showToast("🗑️ Venta eliminada correctamente");
+            loadData(); // Recargar la tabla para que desaparezca
+        } else {
+            showToast(result.error || "Error al eliminar", 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast("Error de conexión", 'error');
     }
 };
 
